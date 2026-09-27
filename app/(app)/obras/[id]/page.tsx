@@ -60,6 +60,7 @@ export default async function CasePage({ params }: PageProps<"/obras/[id]">) {
   const canSubmit = can(user, "submit", c);
   const canCancel = can(user, "cancel", c);
   const canReview = can(user, "review", c);
+  const released = c.status === "APPROVED" || c.status === "IN_PROGRESS" || c.status === "COMPLETED";
   const canStart = can(user, "start", c);
   const canReportCompletion = can(user, "report_completion", c);
   const canConfirmCompletion = can(user, "confirm_completion", c);
@@ -95,8 +96,13 @@ export default async function CasePage({ params }: PageProps<"/obras/[id]">) {
               {user.role !== "RESIDENT" && ` · ${c.resident.name}`}
             </p>
           </div>
-          {(canEdit || canCancel) && (
+          {(canEdit || canCancel || canReview || released) && (
             <div className="flex flex-wrap gap-2.5">
+              {(released || canReview) && (
+                <Button asChild variant="outline">
+                  <Link href={`/obras/${c.id}/imprimir`}>{released ? "Termo de liberação" : "Pré-visualizar termo"}</Link>
+                </Button>
+              )}
               {canEdit && (
                 <Button asChild variant="outline">
                   <Link href={`/obras/${c.id}/editar`}>Editar obra</Link>

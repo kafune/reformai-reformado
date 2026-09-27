@@ -154,3 +154,18 @@
     @apply bg-surface text-foreground text-sm antialiased;
   }
 }
+
+/* Termo de liberação (app/(print)): A4 sem margens do navegador; o próprio termo tem as margens. */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html,
+  body {
+    background: #fff;
+  }
+  .print-sheet {
+    padding: 22mm 20mm;
+  }
+}

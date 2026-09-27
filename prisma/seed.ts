@@ -123,7 +123,8 @@ async function main() {
     const flags: Flags = { affectsCommonArea: false, affectsFacade: false, affectsStructure: false, ...opts.flags };
     const risk = calculateRisk(opts.services, flags);
     const requiredDocs = requiredDocuments(risk);
-    const createdAt = new Date(Date.now() - (opts.daysAgo ?? 0) * 86_400_000);
+    // Criada há N dias (e sempre umas horas atrás, para os eventos do seed ficarem no passado).
+    const createdAt = new Date(Date.now() - (opts.daysAgo ?? 0) * 86_400_000 - 3 * 3_600_000);
     const protocol = `RF-2026-${String(++seq).padStart(6, "0")}`;
 
     const c = await db.case.create({
@@ -209,7 +210,7 @@ async function main() {
 
     let t = createdAt.getTime();
     for (const e of events) {
-      t += 15 * 60_000;
+      t += 5 * 60_000;
       await db.caseEvent.create({
         data: {
           caseId: c.id,

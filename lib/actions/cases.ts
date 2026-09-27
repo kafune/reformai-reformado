@@ -200,3 +200,63 @@ export async function cancelCase(caseId: string): Promise<ActionState> {
   revalidatePath("/obras");
   return { ok: true };
 }
+
+const DateSchema = z.object({
+  date: z
+    .string()
+    .trim()
+    .min(1, "Informe a data.")
+    .transform((s) => new Date(`${s}T12:00:00`))
+    .refine((d) => !Number.isNaN(d.getTime()), "Data inválida.")
+    .refine((d) => d.getTime() <= Date.now() + 86_400_000, "A data não pode ser no futuro."),
+});
+
+/** Morador informa o início da obra (APPROVED → IN_PROGRESS). */
+export async function startCase(caseId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser();
+  const c = await getCaseForUser(user, caseId);
+  assertCan(user, "start", c);
+  assertTransition(c.status, "IN_PROGRESS");
+
+  const parsed = DateSchema.safeParse({ date: formData.get("date") });
+  if (!parsed.success) return fromZodError(parsed.error);
+
+  await db.$transaction(async (tx) => {
+    await tx.case.update({ where: { id: caseId }, data: { status: "IN_PROGRESS", startedAt: parsed.data.date } });
+    await logEvent(tx, {
+      caseId,
+      userId: user.id,
+      type: "status_changed",
+      fromStatus: c.status,
+      toStatus: "IN_PROGRESS",
+      data: { startedAt: parsed.data.date.toISOString() },
+    });
+  });
+
+  revalidatePath(`/obras/${caseId}`);
+  revalidatePath("/obras");
+  return { ok: true };
+}
+
+/** Morador informa a conclusão; o status só muda quando síndico/admin confirma. */
+export async function reportCompletion(caseId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser();
+  const c = await getCaseForUser(user, caseId);
+  assertCan(user, "report_completion", c);
+
+  const parsed = DateSchema.safeParse({ date: formData.get("date") });
+  if (!parsed.success) return fromZodError(parsed.error);
+
+  await db.$transaction(async (tx) => {
+    await tx.case.update({ where: { id: caseId }, data: { completedAt: parsed.data.date } });
+    await logEvent(tx, {
+      caseId,
+      userId: user.id,
+      type: "completion_reported",
+      data: { completedAt: parsed.data.date.toISOString() },
+    });
+  });
+
+  revalidatePath(`/obras/${caseId}`);
+  return { ok: true };
+}

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatRelative } from "@/lib/format";
+import { formatDate, formatRelative } from "@/lib/format";
 import { DOCUMENT_LABEL, isDocumentType } from "@/lib/rules/checklist";
 import { STATUS_LABEL, type CaseStatus } from "@/lib/rules/status";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,8 @@ export function describeEvent(e: EventRow, currentUserId: string): { who: string
       return { who, text: "informou o responsável técnico", kind: "default" };
     case "art_confirmed":
       return { who, text: "conferiu que a ART/RRT cobre os serviços declarados", kind: "default" };
+    case "completion_reported":
+      return { who, text: `informou a conclusão da obra${typeof data.completedAt === "string" ? ` em ${formatDate(new Date(data.completedAt))}` : ""}`, kind: "default" };
     case "comment":
       return { who, text: e.message ?? "comentou", kind: "default" };
     case "ai_suggestion":

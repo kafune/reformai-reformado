@@ -4,7 +4,10 @@ import Link from "next/link";
 import { ArtRequirement } from "@/components/case/art-requirement";
 import { CancelCaseButton } from "@/components/case/cancel-case-button";
 import { CaseStepper } from "@/components/case/case-stepper";
+import { CaseNotices } from "@/components/case/case-notices";
 import { CaseTimeline } from "@/components/case/case-timeline";
+import { DecisionCard } from "@/components/case/decision-card";
+import { ConfirmCompletionCard, ReportDateCard } from "@/components/case/execution-cards";
 import { DocumentList } from "@/components/case/document-list";
 import { ProfessionalForm } from "@/components/case/professional-form";
 import { SubmitCard } from "@/components/case/submit-card";
@@ -19,7 +22,7 @@ import { can, getCaseForUser } from "@/lib/permissions";
 import { requiredDocuments, type DocumentType } from "@/lib/rules/checklist";
 import { calculateRisk } from "@/lib/rules/risk";
 import { FLAGS, SERVICE_BY_KEY, isServiceKey } from "@/lib/rules/services";
-import { blockerMessage, submissionBlockers } from "@/lib/rules/status";
+import { approvalBlockers, blockerMessage, submissionBlockers } from "@/lib/rules/status";
 
 export async function generateMetadata({ params }: PageProps<"/obras/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -54,7 +57,15 @@ export default async function CasePage({ params }: PageProps<"/obras/[id]">) {
   const canUpload = can(user, "upload", c);
   const canSubmit = can(user, "submit", c);
   const canCancel = can(user, "cancel", c);
+  const canReview = can(user, "review", c);
+  const canStart = can(user, "start", c);
+  const canReportCompletion = can(user, "report_completion", c);
+  const canConfirmCompletion = can(user, "confirm_completion", c);
   const blockers = submissionBlockers(c, documents).map(blockerMessage);
+  // Bloqueios de liberação sem a conferência da ART (ela é o checkbox do lado do cliente).
+  const approvalBlocks = approvalBlockers(c, documents, true).map(blockerMessage);
+  const lastTo = (status: "CHANGES_REQUESTED" | "REJECTED") =>
+    events.find((e) => e.type === "status_changed" && e.toStatus === status)?.message ?? null;
 
   const period =
     c.plannedStart || c.plannedEnd ? `${formatDate(c.plannedStart)} a ${formatDate(c.plannedEnd)}` : "—";
@@ -95,8 +106,24 @@ export default async function CasePage({ params }: PageProps<"/obras/[id]">) {
 
       <CaseStepper status={c.status} />
 
+      <CaseNotices
+        status={c.status}
+        changesMessage={lastTo("CHANGES_REQUESTED")}
+        rejectionReason={lastTo("REJECTED")}
+        approvalConditions={c.approvalConditions}
+        startedAt={c.startedAt}
+        completedAt={c.completedAt}
+        isResident={user.role === "RESIDENT"}
+      />
+
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex flex-col gap-5">
+          {canStart && <ReportDateCard caseId={c.id} kind="start" />}
+          {canReportCompletion && !c.completedAt && <ReportDateCard caseId={c.id} kind="completion" />}
+          {canConfirmCompletion && <ConfirmCompletionCard caseId={c.id} reportedAt={c.completedAt ? formatDate(c.completedAt) : null} />}
+
+          {canReview && <DecisionCard caseId={c.id} blockers={approvalBlocks} requiresArt={c.requiresArt} />}
+
           <ArtRequirement requiresArt={c.requiresArt} services={c.services} />
 
           <DocumentList
@@ -105,6 +132,7 @@ export default async function CasePage({ params }: PageProps<"/obras/[id]">) {
             docOrigins={docOrigins}
             documents={documents}
             canUpload={canUpload}
+            canReview={canReview}
           />
 
           {c.requiresArt &&

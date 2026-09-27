@@ -9,6 +9,7 @@ export type CaseEventType =
   | "document_uploaded"
   | "document_reviewed"
   | "professional_updated"
+  | "completion_reported"
   | "art_confirmed"
   | "comment"
   | "ai_suggestion"

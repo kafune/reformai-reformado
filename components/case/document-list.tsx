@@ -1,4 +1,5 @@
 import { DocStatusBadge } from "@/components/doc-status-badge";
+import { DocumentReviewForm } from "@/components/case/document-review-form";
 import { OriginTag } from "@/components/origin-tag";
 import { UploadDocumentForm } from "@/components/case/upload-document-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,15 +28,15 @@ export function DocumentList({
   docOrigins,
   documents,
   canUpload,
-  viewHref,
+  canReview = false,
 }: {
   caseId: string;
   requiredDocs: DocumentType[];
   docOrigins: Partial<Record<DocumentType, "rules" | "julia">>;
   documents: DocumentRow[];
   canUpload: boolean;
-  /** Link para ver o arquivo (URL assinada), quando o usuário pode. */
-  viewHref?: (doc: DocumentRow) => string;
+  /** Síndico/admin com a obra em análise: aprovar/reprovar cada documento. */
+  canReview?: boolean;
 }) {
   const latest = (type: DocumentType) => documents.find((d) => d.type === type) ?? null; // documents já vem do mais novo para o mais antigo
   const sent = requiredDocs.filter((t) => {
@@ -48,7 +49,11 @@ export function DocumentList({
       <CardHeader className="flex-row items-center justify-between">
         <CardTitle>Documentos</CardTitle>
         <span className="text-xs text-muted-foreground">
-          {requiredDocs.length === 0 ? "nenhum obrigatório" : `${sent} de ${requiredDocs.length} enviados`}
+          {canReview
+            ? "Abra cada arquivo e confira."
+            : requiredDocs.length === 0
+              ? "nenhum obrigatório"
+              : `${sent} de ${requiredDocs.length} enviados`}
         </span>
       </CardHeader>
       <CardContent className="flex flex-col divide-y">
@@ -71,13 +76,15 @@ export function DocumentList({
                 <div className="text-xs text-muted-foreground">
                   {doc ? (
                     <>
-                      {viewHref ? (
-                        <a href={viewHref(doc)} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
-                          {doc.fileName}
-                        </a>
-                      ) : (
-                        doc.fileName
-                      )}{" "}
+                      <a
+                        href={`/api/files/${doc.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-foreground underline-offset-2 hover:underline"
+                        title="Abrir (link válido por 1h)"
+                      >
+                        {doc.fileName}
+                      </a>{" "}
                       · {formatSize(doc.sizeBytes)} · enviado {formatRelative(doc.createdAt)}{" "}
                     </>
                   ) : (
@@ -85,8 +92,16 @@ export function DocumentList({
                   )}
                   <OriginTag origin={docOrigins[type] ?? "rules"} />
                 </div>
-                {doc?.status === "REJECTED" && doc.reviewNote && (
-                  <div className="mt-0.5 text-xs text-danger">Motivo: {doc.reviewNote}</div>
+                {doc?.reviewNote && !canReview && (
+                  <div className={`mt-0.5 text-xs ${doc.status === "REJECTED" ? "text-danger" : "text-muted-foreground"}`}>
+                    {doc.status === "REJECTED" ? "Motivo: " : "Nota: "}
+                    {doc.reviewNote}
+                  </div>
+                )}
+                {doc && canReview && (
+                  <div className="mt-2">
+                    <DocumentReviewForm documentId={doc.id} current={doc.status} currentNote={doc.reviewNote} />
+                  </div>
                 )}
               </div>
               <div className="flex basis-full flex-row items-center justify-end gap-2 sm:basis-auto sm:flex-col sm:items-end">

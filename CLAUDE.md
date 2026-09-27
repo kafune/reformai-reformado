@@ -41,11 +41,12 @@ sindico@demo.com, morador@demo.com — senha `senha123`.
 ## Estrutura
 ```
 app/(public)/login, cadastro/[signupCode]   app/(app)/obras, obras/nova, obras/[id], obras/[id]/imprimir, art, admin
-app/api/files/[documentId]/route.ts         # único route handler: redireciona para URL assinada
+app/api/files/[documentId]/route.ts         # route handler: checa permissão e redireciona para URL assinada (1h)
 lib/db.ts auth.ts (getCurrentUser) password.ts permissions.ts (can/assertCan/getCaseForUser) format.ts
 lib/storage.ts (uploadFile/signedDownloadUrl) events.ts (logEvent) protocol.ts decision.ts ai.ts
 lib/rules/   services.ts risk.ts checklist.ts status.ts merge.ts (+ *.test.ts)   # PURO
 lib/actions/ auth.ts signup.ts cases.ts documents.ts review.ts admin.ts  # "use server", finas; state.ts = ActionState
+  (review.ts: reviewDocument, requestChanges, approveCase, rejectCase, confirmCompletion — sempre clique humano)
 components/case/ (tela da obra: form, documentos, responsável técnico, envio, timeline)
 components/ui/ (shadcn)  components/ (da tela)   prisma/schema.prisma seed.ts   docs/telas/ (mockups, referência)
 ```

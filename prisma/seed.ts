@@ -322,6 +322,24 @@ async function main() {
     daysAgo: 30,
   });
 
+  // Alarme do painel de ART/RRT: obra em execução com a ART ainda não conferida.
+  // Não acontece pelo app (a guarda de liberação exige ART aprovada); está aqui só para
+  // o painel mostrar como o alarme aparece.
+  await createCase({
+    who: carla,
+    services: ["GAS"],
+    description: "Troca do ponto de gás da cozinha.",
+    status: "IN_PROGRESS",
+    professional: { name: "Eng. Paulo Dias", type: "ENGINEER", reg: "CREA-SP 5069988776", art: "2620250011223" },
+    docs: [
+      { type: "RESPONSIBILITY_TERM", status: "APPROVED" },
+      { type: "ART_RRT", status: "REJECTED", note: "A ART não cobre o serviço de gás." },
+      { type: "DESCRIPTIVE_MEMORIAL", status: "APPROVED" },
+    ],
+    startedAt: new Date(Date.now() - 2 * 86_400_000),
+    daysAgo: 8,
+  });
+
   // Obra no outro condomínio (só admin e o síndico de lá veem)
   await createCase({
     who: carla,

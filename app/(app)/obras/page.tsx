@@ -13,6 +13,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRelative, unitLabel, unitShort } from "@/lib/format";
 import { caseFilterForUser } from "@/lib/permissions";
+import { ART_SITUATION_LABEL, artSituation, type DocForArt } from "@/lib/rules/art";
 import { SERVICE_BY_KEY, isServiceKey } from "@/lib/rules/services";
 import { CASE_STATUSES, STATUS_LABEL, blockerMessage, submissionBlockers, type CaseStatus } from "@/lib/rules/status";
 import { cn } from "@/lib/utils";
@@ -25,13 +26,8 @@ function serviceLabels(services: string[]): string {
   return services.map((s) => (isServiceKey(s) ? SERVICE_BY_KEY[s].label : s)).join(", ");
 }
 
-function artSituation(c: { requiresArt: boolean; documents: { type: string; status: string }[] }): string {
-  if (!c.requiresArt) return "Não exige";
-  const art = c.documents.filter((d) => d.type === "ART_RRT");
-  if (art.some((d) => d.status === "APPROVED")) return "Exige · aprovada";
-  if (art.some((d) => d.status === "PENDING")) return "Exige · enviada";
-  if (art.some((d) => d.status === "REJECTED")) return "Exige · reprovada";
-  return "Exige · pendente";
+function artColumn(c: { requiresArt: boolean; documents: DocForArt[] }): string {
+  return c.requiresArt ? `Exige · ${ART_SITUATION_LABEL[artSituation(c.documents)].toLowerCase()}` : "Não exige";
 }
 
 function isStatus(value: string | undefined): value is CaseStatus {
@@ -67,7 +63,7 @@ export default async function CasesPage({ searchParams }: PageProps<"/obras">) {
         unit: true,
         resident: { select: { name: true } },
         condominium: { select: { name: true } },
-        documents: { select: { type: true, status: true } },
+        documents: { select: { type: true, status: true, createdAt: true } },
       },
       orderBy: { updatedAt: "desc" },
     }),
@@ -207,7 +203,7 @@ export default async function CasesPage({ searchParams }: PageProps<"/obras">) {
                     <RiskBadge level={c.riskLevel} />
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {isResident ? artSituation(c) : `${approved}/${c.requiredDocs.length}`}
+                    {isResident ? artColumn(c) : `${approved}/${c.requiredDocs.length}`}
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={c.status} />

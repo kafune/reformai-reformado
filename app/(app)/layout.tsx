@@ -27,6 +27,7 @@ async function navFor(user: CurrentUser): Promise<{ items: NavItem[]; subtitle: 
         { href: "/obras", label: "Obras", icon: "▦", count: pending },
         { href: "/art", label: "Painel ART/RRT", icon: "◈" },
         { href: `/admin/condominios/${user.condominiumId}`, label: "Cadastro de moradores", icon: "⌗" },
+        { href: "/conta", label: "Minha conta", icon: "◍" },
       ],
     };
   }
@@ -38,6 +39,7 @@ async function navFor(user: CurrentUser): Promise<{ items: NavItem[]; subtitle: 
       { href: "/art", label: "Painel ART/RRT", icon: "◈" },
       { href: "/admin/condominios", label: "Condomínios", icon: "⌂" },
       { href: "/admin/usuarios", label: "Usuários", icon: "◍" },
+      { href: "/conta", label: "Minha conta", icon: "⚙" },
     ],
   };
 }

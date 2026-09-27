@@ -11,6 +11,7 @@ import { GuardError, assertCanApprove, assertCanComplete, assertTransition } fro
 import { fromZodError, type ActionState } from "@/lib/actions/state";
 import { readDocumentVerdict, readReleaseRecommendation, type ReleaseOption } from "@/lib/decision";
 import { maybeRecommendRelease } from "@/lib/julia";
+import { notifyStatusChange } from "@/lib/notify";
 
 const ReviewDocumentSchema = z
   .object({
@@ -87,6 +88,7 @@ export async function requestChanges(caseId: string, _prev: ActionState, formDat
       data: juliaOutcome(c, "request_changes"),
     });
   });
+  await notifyStatusChange(caseId, "CHANGES_REQUESTED", parsed.data.message);
 
   revalidatePath(`/obras/${caseId}`);
   revalidatePath("/obras");
@@ -139,6 +141,7 @@ export async function approveCase(caseId: string, _prev: ActionState, formData: 
       data: { artConfirmed, conditions: conditions ?? null, ...juliaOutcome(c, conditions ? "approve_with_conditions" : "approve") },
     });
   });
+  await notifyStatusChange(caseId, "APPROVED", conditions ?? null);
 
   revalidatePath(`/obras/${caseId}`);
   revalidatePath("/obras");
@@ -166,6 +169,7 @@ export async function rejectCase(caseId: string, _prev: ActionState, formData: F
       data: juliaOutcome(c, "reject"),
     });
   });
+  await notifyStatusChange(caseId, "REJECTED", parsed.data.message);
 
   revalidatePath(`/obras/${caseId}`);
   revalidatePath("/obras");
@@ -188,6 +192,7 @@ export async function confirmCompletion(caseId: string): Promise<ActionState> {
     await tx.case.update({ where: { id: caseId }, data: { status: "COMPLETED" } });
     await logEvent(tx, { caseId, userId: user.id, type: "status_changed", fromStatus: c.status, toStatus: "COMPLETED" });
   });
+  await notifyStatusChange(caseId, "COMPLETED");
 
   revalidatePath(`/obras/${caseId}`);
   revalidatePath("/obras");

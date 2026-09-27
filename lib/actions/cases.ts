@@ -16,6 +16,7 @@ import { FLAGS, SERVICES, SERVICE_KEYS, type Flags, type ServiceKey } from "@/li
 import { assertCanSubmit, assertTransition } from "@/lib/rules/status";
 import { classifyWithRules, logClassificationDecision, maybeRecommendRelease } from "@/lib/julia";
 import { suggestServices } from "@/lib/decision";
+import { notifyCompletionReported, notifyStatusChange } from "@/lib/notify";
 import { fromZodError, type ActionState } from "@/lib/actions/state";
 
 const optionalDate = z
@@ -185,6 +186,7 @@ export async function submitCase(caseId: string): Promise<ActionState> {
     await logEvent(tx, { caseId, userId: user.id, type: "status_changed", fromStatus: c.status, toStatus: "UNDER_REVIEW" });
   });
   await maybeRecommendRelease(caseId); // só tem efeito se não houver documento pendente (ex.: risco baixo)
+  await notifyStatusChange(caseId, "UNDER_REVIEW");
 
   revalidatePath(`/obras/${caseId}`);
   revalidatePath("/obras");
@@ -262,6 +264,7 @@ export async function reportCompletion(caseId: string, _prev: ActionState, formD
       data: { completedAt: parsed.data.date.toISOString() },
     });
   });
+  await notifyCompletionReported(caseId);
 
   revalidatePath(`/obras/${caseId}`);
   return { ok: true };

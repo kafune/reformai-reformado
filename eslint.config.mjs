@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Não é código do app:
     "docs/**",
     "lib/generated/**",
+    "test-results/**",
+    "playwright-report/**",
   ]),
 ]);
 

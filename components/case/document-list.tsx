@@ -4,6 +4,9 @@ import { OriginTag } from "@/components/origin-tag";
 import { UploadDocumentForm } from "@/components/case/upload-document-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatRelative } from "@/lib/format";
+import { JuliaMark } from "@/components/case/julia-classification";
+import { readDocumentVerdict } from "@/lib/decision";
+import { readChecks } from "@/lib/julia";
 import { DOCUMENT_LABEL, type DocumentType } from "@/lib/rules/checklist";
 import type { DocStatus } from "@/lib/rules/status";
 
@@ -15,6 +18,10 @@ export type DocumentRow = {
   status: DocStatus;
   reviewNote: string | null;
   createdAt: Date;
+  extractedText?: string | null;
+  extractedBy?: string | null;
+  checks?: unknown;
+  juliaVerdict?: unknown;
 };
 
 function formatSize(bytes: number): string {
@@ -98,9 +105,15 @@ export function DocumentList({
                     {doc.reviewNote}
                   </div>
                 )}
+                {doc && canReview && <DocumentInsights doc={doc} />}
                 {doc && canReview && (
                   <div className="mt-2">
-                    <DocumentReviewForm documentId={doc.id} current={doc.status} currentNote={doc.reviewNote} />
+                    <DocumentReviewForm
+                      documentId={doc.id}
+                      current={doc.status}
+                      currentNote={doc.reviewNote}
+                      suggested={doc.status === "PENDING" ? suggestedReview(doc) : null}
+                    />
                   </div>
                 )}
               </div>
@@ -115,5 +128,52 @@ export function DocumentList({
         })}
       </CardContent>
     </Card>
+  );
+}
+
+/** Pré-preenchimento da conferência: parecer da Julia-1 (se houver) e os problemas achados como nota. */
+function suggestedReview(doc: DocumentRow): { status: "APPROVED" | "REJECTED"; note: string } | null {
+  const verdict = readDocumentVerdict(doc.juliaVerdict);
+  const problems = readChecks(doc.checks).filter((c) => c.ok === false).map((c) => c.message);
+  if (!verdict) return null;
+  return {
+    status: verdict.verdict === "approve" ? "APPROVED" : "REJECTED",
+    note: verdict.verdict === "reject" ? problems.join(" ") : "",
+  };
+}
+
+/** Para o síndico: achados das checagens, parecer da Julia-1 e o texto extraído (recolhível). */
+function DocumentInsights({ doc }: { doc: DocumentRow }) {
+  const checks = readChecks(doc.checks);
+  const verdict = readDocumentVerdict(doc.juliaVerdict);
+  if (checks.length === 0 && !verdict && !doc.extractedText) return null;
+  return (
+    <div className="mt-2 flex flex-col gap-1.5">
+      {verdict && (
+        <div className="rounded-lg border border-julia-border bg-[#faf8ff] px-3 py-2 text-xs">
+          <span className="flex items-center gap-1.5 font-semibold text-julia">
+            <JuliaMark className="size-[18px] text-[10px]" />
+            Sugere: {verdict.verdict === "approve" ? "aprovar" : "reprovar"} ({Math.round(verdict.confidence * 100)}%)
+          </span>
+        </div>
+      )}
+      {checks.length > 0 && (
+        <ul className="flex flex-col gap-0.5 text-xs">
+          {checks.map((c) => (
+            <li key={c.code} className={c.ok === false ? "text-danger" : c.ok === null ? "text-muted-foreground" : "text-ok"}>
+              {c.ok === false ? "✕" : c.ok === null ? "•" : "✓"} {c.message}
+            </li>
+          ))}
+        </ul>
+      )}
+      {doc.extractedText && (
+        <details className="text-xs">
+          <summary className="cursor-pointer text-muted-foreground">
+            Texto extraído ({doc.extractedBy === "pdf-text" ? "camada de texto do PDF" : "OCR"})
+          </summary>
+          <pre className="mt-1 max-h-48 overflow-auto rounded-lg bg-muted p-2 font-mono text-[11px] whitespace-pre-wrap">{doc.extractedText}</pre>
+        </details>
+      )}
+    </div>
   );
 }

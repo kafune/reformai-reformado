@@ -345,3 +345,142 @@ export function readJuliaClassification(json: unknown): StoredClassification | n
   const parsed = StoredClassificationSchema.safeParse(json);
   return parsed.success ? parsed.data : null;
 }
+
+// ── Decisão 2: parecer do documento (ao anexar, com o texto extraído) ────────
+
+export type DocumentVerdict = {
+  verdict: "approve" | "reject";
+  confidence: number;
+  probabilities: { approve: number; reject: number };
+  justification: string;
+  at: string;
+};
+
+export type DocumentDecision = {
+  ok: boolean;
+  error?: string;
+  verdict: DocumentVerdict | null;
+  questions: Record<string, Question>;
+  context: unknown;
+  raw: unknown;
+  elapsedMs: number;
+};
+
+export type DocumentDecisionInput = DecisionContextInput & {
+  document: {
+    type: DocumentType;
+    fileName: string;
+    /** Texto extraído (camada de texto ou OCR), já recortado. null = não deu para ler. */
+    text: string | null;
+    /** Problemas apontados pelas checagens puras (lib/rules/document-checks.ts). */
+    problems: string[];
+  };
+};
+
+/** Quanto do texto do documento vai no contexto (o resto do contexto também precisa caber). */
+const MAX_DOCUMENT_TEXT_IN_CONTEXT = 6_000;
+
+export async function judgeDocument(input: DocumentDecisionInput): Promise<DocumentDecision> {
+  const context = {
+    ...buildDecisionContext(input),
+    documento_em_analise: {
+      tipo: DOCUMENT_LABEL[input.document.type],
+      arquivo: input.document.fileName,
+      problemas_encontrados: input.document.problems,
+      texto: input.document.text ? input.document.text.slice(0, MAX_DOCUMENT_TEXT_IN_CONTEXT) : "(não foi possível ler o texto do arquivo)",
+    },
+  };
+  const questions: Record<string, Question> = {
+    verdict: {
+      type: "choice",
+      instructions: `O documento em análise (${DOCUMENT_LABEL[input.document.type]}) está correto e completo para esta reforma? Considere o texto do documento, os problemas encontrados e os dados da obra.`,
+      criteria: { approve: "aprovar o documento", reject: "reprovar o documento e pedir ao morador para corrigir" },
+    },
+  };
+  const result = await decide(context, questions);
+  if (!result.ok) return { ok: false, error: result.error, verdict: null, questions, context, raw: result.raw, elapsedMs: result.elapsedMs };
+  const answer = result.answers.verdict;
+  if (!answer) return { ok: false, error: "resposta sem a pergunta 'verdict'", verdict: null, questions, context, raw: result.raw, elapsedMs: result.elapsedMs };
+  const approve = probabilityOf(answer, "approve", 0);
+  const reject = probabilityOf(answer, "reject", 1);
+  const verdict = approve >= reject ? "approve" : "reject";
+  const confidence = Math.max(approve, reject);
+  return {
+    ok: true,
+    verdict: {
+      verdict,
+      confidence,
+      probabilities: { approve, reject },
+      justification: `${verdict === "approve" ? "aprovar" : "reprovar"} (${pct(confidence)})`,
+      at: new Date().toISOString(),
+    },
+    questions,
+    context,
+    raw: result.raw,
+    elapsedMs: result.elapsedMs,
+  };
+}
+
+const StoredVerdictSchema = z.object({
+  verdict: z.enum(["approve", "reject"]),
+  confidence: z.number(),
+  probabilities: z.object({ approve: z.number(), reject: z.number() }),
+  justification: z.string(),
+  at: z.string(),
+});
+export function readDocumentVerdict(json: unknown): DocumentVerdict | null {
+  const parsed = StoredVerdictSchema.safeParse(json);
+  return parsed.success ? parsed.data : null;
+}
+
+// ── Apoio: sugerir serviços a partir da descrição (um noul por serviço) ──────
+
+export type ServiceSuggestion = {
+  services: string[]; // ServiceKey com p(true) ≥ confiança mínima
+  flags: { affectsCommonArea: boolean; affectsFacade: boolean; affectsStructure: boolean };
+  probabilities: Record<string, number>;
+};
+
+export async function suggestServices(
+  description: string,
+  catalog: { key: string; label: string }[],
+  flagCatalog: { key: "affectsCommonArea" | "affectsFacade" | "affectsStructure"; label: string }[],
+): Promise<{ ok: boolean; error?: string; suggestion: ServiceSuggestion | null }> {
+  const questions: Record<string, Question> = {};
+  for (const s of catalog) {
+    questions[`service_${s.key}`] = {
+      type: "noul",
+      instructions: `Pela descrição do morador, a reforma inclui o serviço "${s.label}"?`,
+      criteria: { false: "não inclui", true: "inclui" },
+    };
+  }
+  for (const f of flagCatalog) {
+    questions[`flag_${f.key}`] = {
+      type: "noul",
+      instructions: `Pela descrição do morador, a reforma ${f.label.toLowerCase()}?`,
+      criteria: { false: "não", true: "sim" },
+    };
+  }
+  const result = await decide({ descricao_do_morador: description.slice(0, 4000) }, questions);
+  if (!result.ok) return { ok: false, error: result.error, suggestion: null };
+  const { minConfidence } = juliaConfig();
+  const probabilities: Record<string, number> = {};
+  const p = (id: string) => {
+    const a = result.answers[id];
+    const v = a ? (a.noul ?? probabilityOf(a, "true", 1)) : 0;
+    probabilities[id] = v;
+    return v;
+  };
+  return {
+    ok: true,
+    suggestion: {
+      services: catalog.filter((s) => p(`service_${s.key}`) >= minConfidence).map((s) => s.key),
+      flags: {
+        affectsCommonArea: p("flag_affectsCommonArea") >= minConfidence,
+        affectsFacade: p("flag_affectsFacade") >= minConfidence,
+        affectsStructure: p("flag_affectsStructure") >= minConfidence,
+      },
+      probabilities,
+    },
+  };
+}

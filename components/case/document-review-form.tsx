@@ -13,13 +13,16 @@ export function DocumentReviewForm({
   documentId,
   current,
   currentNote,
+  suggested,
 }: {
   documentId: string;
   current: DocStatus;
   currentNote: string | null;
+  /** Pré-preenchimento (Julia-1 + checagens). O humano confirma ou altera. */
+  suggested?: { status: "APPROVED" | "REJECTED"; note: string } | null;
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(reviewDocument.bind(null, documentId), {});
-  const [status, setStatus] = useState<DocStatus>(current);
+  const [status, setStatus] = useState<DocStatus>(current === "PENDING" && suggested ? suggested.status : current);
 
   return (
     <form action={action} className="flex flex-wrap items-center gap-2.5">
@@ -47,13 +50,13 @@ export function DocumentReviewForm({
       </label>
       <Input
         name="note"
-        defaultValue={currentNote ?? ""}
+        defaultValue={currentNote ?? suggested?.note ?? ""}
         placeholder={status === "REJECTED" ? "Diga o que está errado" : "Nota (opcional)"}
         className="h-8 min-w-40 flex-1 text-xs"
         aria-invalid={state.fieldErrors?.note ? true : undefined}
       />
-      <Button type="submit" size="sm" variant="outline" disabled={pending || status === "PENDING"}>
-        {pending ? "Salvando…" : "Salvar"}
+      <Button type="submit" size="sm" variant={suggested && current === "PENDING" ? "julia" : "outline"} disabled={pending || status === "PENDING"}>
+        {pending ? "Salvando…" : suggested && current === "PENDING" ? "Confirmar" : "Salvar"}
       </Button>
       {state.fieldErrors?.note && <p className="basis-full text-xs text-danger">{state.fieldErrors.note.join(" ")}</p>}
       {state.error && !state.fieldErrors && <p className="basis-full text-xs text-danger">{state.error}</p>}

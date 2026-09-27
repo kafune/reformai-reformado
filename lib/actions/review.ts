@@ -9,7 +9,7 @@ import { logEvent } from "@/lib/events";
 import { assertCan, getCaseForUser } from "@/lib/permissions";
 import { GuardError, assertCanApprove, assertCanComplete, assertTransition } from "@/lib/rules/status";
 import { fromZodError, type ActionState } from "@/lib/actions/state";
-import { readReleaseRecommendation, type ReleaseOption } from "@/lib/decision";
+import { readDocumentVerdict, readReleaseRecommendation, type ReleaseOption } from "@/lib/decision";
 import { maybeRecommendRelease } from "@/lib/julia";
 
 const ReviewDocumentSchema = z
@@ -41,13 +41,19 @@ export async function reviewDocument(documentId: string, _prev: ActionState, for
       userId: user.id,
       type: "document_reviewed",
       message: note ?? null,
-      data: { documentId, type: doc.type, status },
+      data: { documentId, type: doc.type, status, ...documentJuliaOutcome(doc.juliaVerdict, status) },
     });
   });
   await maybeRecommendRelease(c.id); // Decisão 3 da Julia-1, quando todos os documentos foram avaliados
 
   revalidatePath(`/obras/${c.id}`);
   return { ok: true };
+}
+
+function documentJuliaOutcome(juliaVerdict: unknown, status: "APPROVED" | "REJECTED") {
+  const v = readDocumentVerdict(juliaVerdict);
+  if (!v) return {};
+  return { juliaVerdict: v.verdict, juliaConfidence: v.confidence, juliaAccepted: (v.verdict === "approve") === (status === "APPROVED") };
 }
 
 /** Registra se o humano aceitou ou alterou a recomendação da Julia-1 (base para medir qualidade). */

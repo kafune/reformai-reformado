@@ -2,15 +2,19 @@
 // resultado + CaseEvent. Chamado pelas server actions. Sem JULIA_URL, tudo aqui é no-op.
 import { Prisma } from "@/lib/generated/prisma/client";
 import { db, type Tx } from "@/lib/db";
+import { z } from "zod";
+
 import {
   classifyCase,
+  judgeDocument,
   juliaConfig,
   recommendRelease,
   type ClassificationDecision,
   type DecisionContextInput,
 } from "@/lib/decision";
 import { logEvent } from "@/lib/events";
-import { type DocumentType } from "@/lib/rules/checklist";
+import { DOCUMENT_LABEL, type DocumentType } from "@/lib/rules/checklist";
+import { checkProblems, type DocumentCheck } from "@/lib/rules/document-checks";
 import { mergeClassification, type Classification, type RulesClassification } from "@/lib/rules/merge";
 import { SERVICE_BY_KEY, isServiceKey, type Flags } from "@/lib/rules/services";
 
@@ -183,4 +187,58 @@ export async function maybeRecommendRelease(caseId: string): Promise<void> {
       }),
     });
   });
+}
+
+// ── Decisão 2: parecer do documento (ao anexar) ──────────────────────────────
+
+/**
+ * Pede à Julia-1 o parecer de um documento recém-anexado, com o texto extraído e os achados
+ * das checagens puras. Só pré-preenche a conferência do síndico/admin (Document.juliaVerdict).
+ */
+export async function maybeJudgeDocument(documentId: string): Promise<void> {
+  if (!juliaConfig().enabled) return;
+  const doc = await db.document.findUnique({ where: { id: documentId } });
+  if (!doc) return;
+  const c = await db.case.findUnique({ where: { id: doc.caseId } });
+  if (!c) return;
+  const rules: RulesClassification = { score: c.riskScore, level: c.riskLevel, requiresArt: c.requiresArt, requiredDocs: c.requiredDocs, guidance: [] };
+  const checks = readChecks(doc.checks);
+  const decision = await judgeDocument({
+    ...(await decisionInput(c, c.condominiumId, rules, c.id)),
+    document: { type: doc.type as DocumentType, fileName: doc.fileName, text: doc.extractedText, problems: checkProblems(checks) },
+  });
+
+  await db.$transaction(async (tx) => {
+    if (decision.verdict) {
+      await tx.document.update({ where: { id: documentId }, data: { juliaVerdict: json(decision.verdict) } });
+    }
+    await logEvent(tx, {
+      caseId: c.id,
+      userId: null,
+      type: "julia_decision",
+      message: decision.ok
+        ? `sugeriu ${decision.verdict?.justification} para ${DOCUMENT_LABEL[doc.type as DocumentType]}`
+        : `indisponível (${decision.error}); sem parecer para ${DOCUMENT_LABEL[doc.type as DocumentType]}`,
+      data: json({
+        kind: "document",
+        documentId,
+        ok: decision.ok,
+        error: decision.error ?? null,
+        context: decision.context,
+        questions: decision.questions,
+        response: decision.raw ?? null,
+        verdict: decision.verdict,
+        elapsedMs: decision.elapsedMs,
+        model: "SupersonicLabs/Julia-1",
+      }),
+    });
+  });
+}
+
+/** Lê Document.checks (JSON) validando o formato. */
+export function readChecks(json: unknown): DocumentCheck[] {
+  const parsed = z
+    .array(z.object({ code: z.string(), ok: z.boolean().nullable(), message: z.string() }))
+    .safeParse(json);
+  return parsed.success ? parsed.data : [];
 }

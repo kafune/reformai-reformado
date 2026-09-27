@@ -154,8 +154,10 @@ model Document {
   sizeBytes    Int
   status       DocStatus    @default(PENDING)
   reviewNote   String?
-  aiNotes      Json? // observações do Claude (só informativas)
-  juliaVerdict Json? // recomendação da Julia-1: aprovar/reprovar + motivo
+  extractedText String? // texto do arquivo (camada de texto do PDF ou OCR), recortado
+  extractedBy   String? // "pdf-text" | "ocr:pp-ocrv5" | null (falhou)
+  checks        Json? // achados das checagens puras sobre o texto (lib/rules/document-checks.ts)
+  juliaVerdict  Json? // parecer da Julia-1: aprovar/reprovar + probabilidades
   uploadedById String
   createdAt    DateTime     @default(now())
 

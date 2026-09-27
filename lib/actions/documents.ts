@@ -8,6 +8,9 @@ import { db } from "@/lib/db";
 import { logEvent } from "@/lib/events";
 import { assertCan, getCaseForUser } from "@/lib/permissions";
 import { DOCUMENT_TYPES, type DocumentType } from "@/lib/rules/checklist";
+import { extractDocumentText } from "@/lib/extract-text";
+import { maybeJudgeDocument } from "@/lib/julia";
+import { checkDocument } from "@/lib/rules/document-checks";
 import { ALLOWED_MIME_TYPES, MAX_FILE_BYTES, safeFileName, uploadFile } from "@/lib/storage";
 import type { ActionState } from "@/lib/actions/state";
 
@@ -33,16 +36,31 @@ export async function uploadDocument(caseId: string, _prev: ActionState, formDat
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Arquivo inválido." };
   const { type, file } = parsed.data;
 
+  const bytes = new Uint8Array(await file.arrayBuffer());
   const storageKey = `cases/${caseId}/${type.toLowerCase()}/${Date.now()}-${safeFileName(file.name)}`;
   try {
-    await uploadFile(storageKey, new Uint8Array(await file.arrayBuffer()), file.type);
+    await uploadFile(storageKey, bytes, file.type);
   } catch (error) {
     console.error("Falha ao gravar no storage", { storageKey, error });
     return { error: "Não foi possível salvar o arquivo. Tente de novo em instantes." };
   }
 
-  await db.$transaction(async (tx) => {
-    const doc = await tx.document.create({
+  // Texto (camada do PDF ou OCR) + checagens puras. Falha = sem texto; o documento é salvo igual.
+  const extracted = await extractDocumentText(bytes, file.type);
+  const checks = checkDocument({
+    type,
+    text: extracted?.text ?? null,
+    artNumber: c.artNumber,
+    professionalReg: c.professionalReg,
+    professionalName: c.professionalName,
+    unitNumber: c.unit.number,
+    unitBlock: c.unit.block,
+    condominiumAddress: c.condominium.address,
+    services: c.services,
+  });
+
+  const doc = await db.$transaction(async (tx) => {
+    const created = await tx.document.create({
       data: {
         caseId,
         type,
@@ -51,15 +69,20 @@ export async function uploadDocument(caseId: string, _prev: ActionState, formDat
         mimeType: file.type,
         sizeBytes: file.size,
         uploadedById: user.id,
+        extractedText: extracted?.text ?? null,
+        extractedBy: extracted?.by ?? null,
+        checks,
       },
     });
     await logEvent(tx, {
       caseId,
       userId: user.id,
       type: "document_uploaded",
-      data: { documentId: doc.id, type, fileName: file.name },
+      data: { documentId: created.id, type, fileName: file.name, extractedBy: extracted?.by ?? null, problems: checks.filter((k) => k.ok === false).length },
     });
+    return created;
   });
+  await maybeJudgeDocument(doc.id); // Decisão 2 da Julia-1: só pré-preenche a conferência
 
   revalidatePath(`/obras/${caseId}`);
   return { ok: true };

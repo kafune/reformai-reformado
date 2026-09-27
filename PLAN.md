@@ -573,3 +573,16 @@ Convenções que valem para o app:
 - Botão bloqueado sempre diz **o que falta** (ex.: "Falta anexar: Memorial descritivo").
 - Aviso "a plataforma não emite ART/RRT" na obra e no termo.
 - Mobile first de verdade: tudo funciona em 390px sem rolagem horizontal da página (tabelas rolam dentro do card).
+
+---
+
+## 15. Alterações decididas durante a implementação
+
+- **Fase 6 (27/09/2026):** a Julia-1 é um modelo de decisão tipado (escolhe entre opções e devolve
+  probabilidades; não gera texto nem lê arquivos; API hospedada ainda não pública). Ver
+  `docs/julia-1-api.md`. A justificativa gravada é pergunta → opção → probabilidade.
+- **Fase 7 (27/09/2026):** **Claude removido** (`lib/ai.ts` não existe). No lugar: OCR self-hosted
+  (PaddleOCR PP-OCRv5, CPU) + camada de texto do PDF (`unpdf`) transformam os documentos em texto;
+  checagens puras (`lib/rules/document-checks.ts`) apontam problemas; a Julia-1 dá o parecer do
+  documento (Decisão 2) e sugere os serviços a partir da descrição (um `noul` por serviço). Ver
+  `docs/ocr.md`. OCR sai da lista da §13.

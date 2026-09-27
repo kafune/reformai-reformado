@@ -12,9 +12,10 @@ import { assertCan, getCaseForUser } from "@/lib/permissions";
 import { nextProtocol } from "@/lib/protocol";
 import { requiredDocuments } from "@/lib/rules/checklist";
 import { calculateRisk } from "@/lib/rules/risk";
-import { SERVICE_KEYS, type ServiceKey } from "@/lib/rules/services";
+import { FLAGS, SERVICES, SERVICE_KEYS, type Flags, type ServiceKey } from "@/lib/rules/services";
 import { assertCanSubmit, assertTransition } from "@/lib/rules/status";
 import { classifyWithRules, logClassificationDecision, maybeRecommendRelease } from "@/lib/julia";
+import { suggestServices } from "@/lib/decision";
 import { fromZodError, type ActionState } from "@/lib/actions/state";
 
 const optionalDate = z
@@ -264,4 +265,18 @@ export async function reportCompletion(caseId: string, _prev: ActionState, formD
 
   revalidatePath(`/obras/${caseId}`);
   return { ok: true };
+}
+
+/** Apoio ao formulário: a Julia-1 sugere os checkboxes a partir da descrição. O morador confirma. */
+export async function suggestServicesFromDescription(description: string): Promise<{ services: string[]; flags: Flags } | { error: string }> {
+  await getCurrentUser();
+  const text = z.string().trim().min(10).max(4000).safeParse(description);
+  if (!text.success) return { error: "Escreva a descrição antes de pedir a sugestão." };
+  const r = await suggestServices(
+    text.data,
+    SERVICES.map((s) => ({ key: s.key, label: s.label })),
+    FLAGS.map((f) => ({ key: f.key, label: f.label })),
+  );
+  if (!r.ok || !r.suggestion) return { error: "Sugestão indisponível no momento." };
+  return { services: r.suggestion.services, flags: r.suggestion.flags };
 }

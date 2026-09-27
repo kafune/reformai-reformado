@@ -9,7 +9,7 @@ síndico/administradora confere e libera. **A plataforma não emite ART/RRT.** F
 - Sem parceiro técnico, sem vistoria: o morador traz o próprio profissional; guardamos nome, registro e nº da ART/RRT.
 - Sem comercial/pagamento. Sem dados legados (banco vazio + seed).
 - Decisões pela **Julia-1** (`lib/decision.ts`); regras de `lib/rules/` são o **piso** (ela só aumenta exigências).
-  Liberar/recusar é sempre clique humano. Claude (`lib/ai.ts`) só sugere/comenta. Sem chave de IA, tudo funciona só com regras.
+  Liberar/recusar é sempre clique humano. Sem `JULIA_URL`/`OCR_URL`, tudo funciona só com regras. **Sem Claude** (decidido na Fase 7).
 
 ## Princípios (PLAN.md §4)
 1. Código chato ganha. Função simples > classe > padrão de projeto.
@@ -43,9 +43,10 @@ sindico@demo.com, morador@demo.com — senha `senha123`.
 app/(public)/login, cadastro/[signupCode]   app/(app)/obras, obras/nova, obras/[id], obras/[id]/imprimir, art, admin
 app/api/files/[documentId]/route.ts         # route handler: checa permissão e redireciona para URL assinada (1h)
 lib/db.ts auth.ts (getCurrentUser) password.ts permissions.ts (can/assertCan/getCaseForUser) format.ts
-lib/storage.ts (uploadFile/signedDownloadUrl) events.ts (logEvent) protocol.ts ai.ts
-lib/decision.ts (Julia-1: só fetch + Zod + perguntas tipadas; testes com fetch mockado) julia.ts (cola com o banco: classifyWithRules, maybeRecommendRelease)
-lib/rules/   services.ts risk.ts checklist.ts status.ts merge.ts art.ts (+ *.test.ts)   # PURO
+lib/storage.ts (uploadFile/signedDownloadUrl) events.ts (logEvent) protocol.ts
+lib/extract-text.ts (unpdf → OCR) ocr.ts (PaddleOCR serving: só fetch + Zod)
+lib/decision.ts (Julia-1: só fetch + Zod + perguntas tipadas; testes com fetch mockado) julia.ts (cola com o banco: classifyWithRules, maybeJudgeDocument, maybeRecommendRelease)
+lib/rules/   services.ts risk.ts checklist.ts status.ts merge.ts art.ts document-checks.ts (+ *.test.ts)   # PURO
 lib/actions/ auth.ts signup.ts cases.ts documents.ts review.ts admin.ts  # "use server", finas; state.ts = ActionState
   (review.ts: reviewDocument, requestChanges, approveCase, rejectCase, confirmCompletion — sempre clique humano)
 components/case/ (tela da obra: form, documentos, responsável técnico, envio, timeline)
@@ -69,11 +70,11 @@ export async function approveCase(caseId: string, input: unknown) {
 - Código em inglês, textos de tela em português do Brasil. Server Components para leitura, Server Actions para mutação.
 - Tokens de cor (status, risco, Julia-1 em roxo) em `app/globals.css`; mockups e screenshots em `docs/telas/` (PLAN.md §14).
 - Botão bloqueado sempre diz o que falta. Cada exigência mostra a origem: "pela tabela" ou "pela Julia-1: motivo".
-- Mobile first: tudo funciona em 390px; tabelas rolam dentro do card.
-- Formulários: client component + `useActionState`; a action devolve `ActionState` (`error`, `fieldErrors`, `ok`).
-  Upload passa pela server action (`bodySizeLimit` 25mb no next.config.ts). Erro de storage vira mensagem, não exceção.
+- Mobile first: tudo funciona em 390px; tabelas rolam dentro do card. Formulários: client component + `useActionState`;
+  a action devolve `ActionState`. Upload passa pela server action (`bodySizeLimit` 25mb). Erro de storage vira mensagem.
 - Julia-1 (docs/julia-1-api.md): modelo de decisão tipado (choice/score/noul, probabilidades), não gera texto nem lê
-  arquivos. Decisão 1 (classificação) ao salvar a obra via `mergeClassification`; Decisão 3 (recomendação) quando todos os
-  documentos foram avaliados, só pré-preenche. Decisão 2 (parecer de documento) ficou com o Claude (Fase 7). A
-  justificativa gravada é pergunta → opção → probabilidade. Sem `JULIA_URL`, nada é chamado.
+  arquivos. Decisão 1 (classificação) ao salvar a obra via `mergeClassification`; Decisão 2 (parecer do documento) no
+  upload, com o texto extraído (docs/ocr.md) e os achados de `document-checks.ts`; Decisão 3 (recomendação) quando todos
+  os documentos foram avaliados. 2 e 3 só pré-preenchem. Sugestão de serviços = um `noul` por serviço. A justificativa
+  gravada é pergunta → opção → probabilidade. Sem `JULIA_URL`, nada é chamado.
 - Não implementar nada da §13 (backlog) sem pedido. Em dúvida sobre o PLAN.md, perguntar.

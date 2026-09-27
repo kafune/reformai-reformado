@@ -49,7 +49,18 @@ services:
     volumes:
       - julia-models:/models
 
+  # OCR (opcional): PaddleOCR PP-OCRv5 em CPU, serving oficial. Sobe com: docker compose --profile ocr up
+  # Depois aponte OCR_URL=http://localhost:8080 no .env. Ver docs/ocr.md.
+  ocr:
+    profiles: ["ocr"]
+    build: ./docker/ocr
+    ports:
+      - "8080:8080"
+    volumes:
+      - ocr-models:/root/.paddlex
+
 volumes:
   postgres-data:
   minio-data:
   julia-models:
+  ocr-models:

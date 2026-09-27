@@ -5,6 +5,7 @@ import { CaseForm } from "@/components/case/case-form";
 import { PageHeader } from "@/components/page-header";
 import { createCase } from "@/lib/actions/cases";
 import { getCurrentUser } from "@/lib/auth";
+import { juliaConfig } from "@/lib/decision";
 
 export const metadata: Metadata = { title: "Nova obra" };
 
@@ -21,7 +22,7 @@ export default async function NewCasePage() {
           subtitle="Conte o que vai ser feito. Ao salvar, calculamos se a obra exige ART/RRT e quais documentos enviar."
         />
       </div>
-      <CaseForm action={createCase} cancelHref="/obras" submitLabel="Salvar rascunho" />
+      <CaseForm action={createCase} cancelHref="/obras" submitLabel="Salvar rascunho" canSuggest={juliaConfig().enabled} />
     </>
   );
 }

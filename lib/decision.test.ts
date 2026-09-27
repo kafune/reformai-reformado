@@ -179,3 +179,64 @@ describe("recommendRelease", () => {
     expect(d.recommendation).toBeNull();
   });
 });
+
+describe("judgeDocument (Decisão 2)", () => {
+  const doc = { type: "ART_RRT" as const, fileName: "art.pdf", text: "ART Nº 123 Carla Nunes elétrica", problems: ['Serviço "Demolição de alvenaria" não aparece na ART/RRT'] };
+
+  it("manda texto e problemas no contexto e devolve o parecer com probabilidades", async () => {
+    fakeJulia(() => ({ answers: { verdict: { type: "choice", probabilities: { approve: 0.3, reject: 0.7 }, choice: "reject", max_probability: 0.7 } } }));
+    const { judgeDocument } = await import("./decision");
+    const d = await judgeDocument({ ...input, document: doc });
+    expect(d.ok).toBe(true);
+    expect(d.verdict).toMatchObject({ verdict: "reject", confidence: 0.7, justification: "reprovar (70%)" });
+    const body = calls[0]!.body as unknown as { state: { documento_em_analise: { texto: string; problemas_encontrados: string[] } } };
+    expect(body.state.documento_em_analise.texto).toBe(doc.text);
+    expect(body.state.documento_em_analise.problemas_encontrados).toEqual(doc.problems);
+    expect(Object.keys(calls[0]!.body.questions)).toEqual(["verdict"]);
+  });
+
+  it("sem texto legível, avisa no contexto em vez de mandar vazio", async () => {
+    fakeJulia(() => ({ answers: { verdict: { type: "choice", probabilities: [0.8, 0.2], choice: "approve" } } }));
+    const { judgeDocument } = await import("./decision");
+    const d = await judgeDocument({ ...input, document: { ...doc, text: null } });
+    const body = calls[0]!.body as unknown as { state: { documento_em_analise: { texto: string } } };
+    expect(body.state.documento_em_analise.texto).toMatch(/não foi possível ler/);
+    expect(d.verdict?.verdict).toBe("approve"); // lista por índice também funciona
+  });
+
+  it("Julia fora do ar: sem parecer, com erro", async () => {
+    fakeJulia(() => ({}), 503);
+    const { judgeDocument } = await import("./decision");
+    const d = await judgeDocument({ ...input, document: doc });
+    expect(d.ok).toBe(false);
+    expect(d.verdict).toBeNull();
+  });
+});
+
+describe("suggestServices", () => {
+  const catalog = [{ key: "ELECTRICAL", label: "Elétrica" }, { key: "GAS", label: "Gás" }, { key: "PAINTING", label: "Pintura simples" }];
+  const flags = [{ key: "affectsStructure" as const, label: "Afeta a estrutura" }];
+
+  it("um noul por serviço e por flag; marca só os que passam da confiança mínima", async () => {
+    fakeJulia(() => ({
+      answers: {
+        service_ELECTRICAL: { type: "noul", probabilities: { false: 0.1, true: 0.9 }, noul: 0.9 },
+        service_GAS: { type: "noul", probabilities: { false: 0.55, true: 0.45 }, noul: 0.45 },
+        service_PAINTING: { type: "noul", probabilities: { false: 0.9, true: 0.1 }, noul: 0.1 },
+        flag_affectsStructure: { type: "noul", probabilities: { false: 0.3, true: 0.7 }, noul: 0.7 },
+      },
+    }));
+    const { suggestServices } = await import("./decision");
+    const r = await suggestServices("Refazer a elétrica e abrir a viga", catalog, flags);
+    expect(Object.keys(calls[0]!.body.questions)).toEqual(["service_ELECTRICAL", "service_GAS", "service_PAINTING", "flag_affectsStructure"]);
+    expect(r.suggestion).toMatchObject({ services: ["ELECTRICAL"], flags: { affectsCommonArea: false, affectsFacade: false, affectsStructure: true } });
+  });
+
+  it("sem Julia: sem sugestão", async () => {
+    delete process.env.JULIA_URL;
+    const { suggestServices } = await import("./decision");
+    const r = await suggestServices("x", catalog, flags);
+    expect(r.ok).toBe(false);
+    expect(r.suggestion).toBeNull();
+  });
+});

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useState, useTransition } from "react";
 
 import { FieldError } from "@/components/field-error";
 import { RiskBadge } from "@/components/risk-badge";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { suggestServicesFromDescription } from "@/lib/actions/cases";
 import type { ActionState } from "@/lib/actions/state";
 import { DOCUMENT_LABEL, requiredDocuments } from "@/lib/rules/checklist";
 import { calculateRisk } from "@/lib/rules/risk";
@@ -39,15 +40,38 @@ export function CaseForm({
   initial = EMPTY,
   cancelHref,
   submitLabel,
+  canSuggest = false,
 }: {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   initial?: CaseFormValues;
   cancelHref: string;
   submitLabel: string;
+  /** Julia-1 configurada: mostra "Sugerir serviços a partir da descrição". */
+  canSuggest?: boolean;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(action, {});
   const [services, setServices] = useState<ServiceKey[]>(initial.services);
   const [flags, setFlags] = useState<Flags>(initial.flags);
+  const [description, setDescription] = useState(initial.description);
+  const [suggested, setSuggested] = useState<Set<string>>(new Set());
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+  const [suggesting, startSuggest] = useTransition();
+
+  const suggest = () =>
+    startSuggest(async () => {
+      setSuggestError(null);
+      const r = await suggestServicesFromDescription(description);
+      if ("error" in r) return setSuggestError(r.error);
+      const keys = r.services.filter((k): k is ServiceKey => SERVICES.some((s) => s.key === k));
+      setServices((prev) => [...new Set([...prev, ...keys])]);
+      setFlags((prev) => ({
+        affectsCommonArea: prev.affectsCommonArea || r.flags.affectsCommonArea,
+        affectsFacade: prev.affectsFacade || r.flags.affectsFacade,
+        affectsStructure: prev.affectsStructure || r.flags.affectsStructure,
+      }));
+      setSuggested(new Set([...keys, ...(Object.keys(r.flags) as (keyof Flags)[]).filter((k) => r.flags[k])]));
+      if (keys.length === 0) setSuggestError("A Julia-1 não reconheceu nenhum serviço da tabela na descrição. Marque manualmente.");
+    });
   const err = (name: string) => state.fieldErrors?.[name];
 
   // Prévia ao vivo, com as mesmas funções puras que o servidor usa ao salvar.
@@ -71,11 +95,21 @@ export function CaseForm({
             <Textarea
               id="description"
               name="description"
-              defaultValue={initial.description}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Ex.: quero integrar a cozinha com a sala derrubando a parede entre elas e refazer a parte elétrica…"
               required
             />
             <FieldError messages={err("description")} />
+            {canSuggest && (
+              <div className="mt-1 flex flex-wrap items-center gap-2.5">
+                <Button type="button" variant="julia" size="sm" onClick={suggest} disabled={suggesting || description.trim().length < 10}>
+                  {suggesting ? "Sugerindo…" : "✦ Sugerir serviços a partir da descrição"}
+                </Button>
+                <span className="text-xs text-muted-foreground">A sugestão só marca as opções abaixo — você confirma.</span>
+                {suggestError && <span className="basis-full text-xs text-danger">{suggestError}</span>}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -95,6 +129,7 @@ export function CaseForm({
                   className={cn(
                     "flex cursor-pointer items-start gap-2.5 rounded-lg border bg-background px-3 py-2.5 hover:border-stone-300",
                     on && "border-primary bg-[#f7fdf9]",
+                    suggested.has(s.key) && "shadow-[inset_0_0_0_1px_var(--julia)]",
                   )}
                 >
                   <input
@@ -127,6 +162,7 @@ export function CaseForm({
                   className={cn(
                     "flex cursor-pointer items-start gap-2.5 rounded-lg border bg-background px-3 py-2.5 hover:border-stone-300",
                     on && "border-primary bg-[#f7fdf9]",
+                    suggested.has(f.key) && "shadow-[inset_0_0_0_1px_var(--julia)]",
                   )}
                 >
                   <input

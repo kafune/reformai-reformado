@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCurrentUser } from "@/lib/auth";
+import { RELEASE_LABEL, readReleaseRecommendation } from "@/lib/decision";
+import { Badge } from "@/components/ui/badge";
 import { db } from "@/lib/db";
 import { formatRelative, unitLabel, unitShort } from "@/lib/format";
 import { caseFilterForUser } from "@/lib/permissions";
@@ -167,6 +169,7 @@ export default async function CasesPage({ searchParams }: PageProps<"/obras">) {
               <TableHead>Serviços</TableHead>
               <TableHead>Risco</TableHead>
               {isResident ? <TableHead>ART/RRT</TableHead> : <TableHead>Docs</TableHead>}
+              {!isResident && <TableHead>Julia-1 recomenda</TableHead>}
               <TableHead>Status</TableHead>
               <TableHead>{isResident ? "Atualizada" : "Enviada"}</TableHead>
               {!isResident && <TableHead />}
@@ -175,7 +178,7 @@ export default async function CasesPage({ searchParams }: PageProps<"/obras">) {
           <TableBody>
             {cases.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="py-10 text-center text-muted-foreground">
                   Nenhuma obra por aqui{status || onlyArt || q ? " com esses filtros" : " ainda"}.
                 </TableCell>
               </TableRow>
@@ -205,6 +208,20 @@ export default async function CasesPage({ searchParams }: PageProps<"/obras">) {
                   <TableCell className="whitespace-nowrap">
                     {isResident ? artColumn(c) : `${approved}/${c.requiredDocs.length}`}
                   </TableCell>
+                  {!isResident && (
+                    <TableCell>
+                      {(() => {
+                        const rec = c.status === "UNDER_REVIEW" ? readReleaseRecommendation(c.releaseRecommendation) : null;
+                        return rec ? (
+                          <Badge variant="julia" title={rec.justification}>
+                            {RELEASE_LABEL[rec.recommendation]}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        );
+                      })()}
+                    </TableCell>
+                  )}
                   <TableCell>
                     <StatusBadge status={c.status} />
                   </TableCell>

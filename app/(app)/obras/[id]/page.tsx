@@ -7,6 +7,7 @@ import { CaseStepper } from "@/components/case/case-stepper";
 import { CaseNotices } from "@/components/case/case-notices";
 import { CaseTimeline } from "@/components/case/case-timeline";
 import { DecisionCard } from "@/components/case/decision-card";
+import { JuliaClassification } from "@/components/case/julia-classification";
 import { ConfirmCompletionCard, ReportDateCard } from "@/components/case/execution-cards";
 import { DocumentList } from "@/components/case/document-list";
 import { ProfessionalForm } from "@/components/case/professional-form";
@@ -16,6 +17,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
+import { readJuliaClassification, readReleaseRecommendation } from "@/lib/decision";
 import { db } from "@/lib/db";
 import { formatDate, unitLabel } from "@/lib/format";
 import { can, getCaseForUser } from "@/lib/permissions";
@@ -64,6 +66,8 @@ export default async function CasePage({ params }: PageProps<"/obras/[id]">) {
   const blockers = submissionBlockers(c, documents).map(blockerMessage);
   // Bloqueios de liberação sem a conferência da ART (ela é o checkbox do lado do cliente).
   const approvalBlocks = approvalBlockers(c, documents, true).map(blockerMessage);
+  const julia = readJuliaClassification(c.juliaDecision);
+  const recommendation = c.status === "UNDER_REVIEW" ? readReleaseRecommendation(c.releaseRecommendation) : null;
   const lastTo = (status: "CHANGES_REQUESTED" | "REJECTED") =>
     events.find((e) => e.type === "status_changed" && e.toStatus === status)?.message ?? null;
 
@@ -122,9 +126,16 @@ export default async function CasePage({ params }: PageProps<"/obras/[id]">) {
           {canReportCompletion && !c.completedAt && <ReportDateCard caseId={c.id} kind="completion" />}
           {canConfirmCompletion && <ConfirmCompletionCard caseId={c.id} reportedAt={c.completedAt ? formatDate(c.completedAt) : null} />}
 
-          {canReview && <DecisionCard caseId={c.id} blockers={approvalBlocks} requiresArt={c.requiresArt} />}
+          {canReview && <DecisionCard caseId={c.id} blockers={approvalBlocks} requiresArt={c.requiresArt} recommendation={recommendation} />}
 
-          <ArtRequirement requiresArt={c.requiresArt} services={c.services} />
+          <ArtRequirement
+            requiresArt={c.requiresArt}
+            services={c.services}
+            artByJulia={julia?.addedByJulia.requiresArt ?? false}
+            juliaReason={julia?.justification}
+          />
+
+          {julia && <JuliaClassification stored={julia} level={c.riskLevel} />}
 
           <DocumentList
             caseId={c.id}

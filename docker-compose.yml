@@ -34,6 +34,22 @@ services:
       mc mb --ignore-existing local/reformai;
       "
 
+  # Julia-1 (opcional): wrapper REST comunitário do modelo de decisão, roda em CPU.
+  # Baixa o checkpoint (~600 MB) na primeira subida. Sobe com: docker compose --profile julia up
+  # Depois aponte JULIA_URL=http://localhost:8000 no .env.
+  julia:
+    profiles: ["julia"]
+    build: https://github.com/ViniciuszXL/julia-1-api.git
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_PROVIDER: julia
+      MODEL_CPU_THREADS: 4
+      MODEL_RATE_LIMIT_RPM: 0 # sem limite por IP dentro da rede local
+    volumes:
+      - julia-models:/models
+
 volumes:
   postgres-data:
   minio-data:
+  julia-models:

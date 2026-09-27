@@ -6,11 +6,14 @@ import { SERVICE_BY_KEY, isServiceKey } from "@/lib/rules/services";
 export function ArtRequirement({
   requiresArt,
   services,
-  extraGuidance = [],
+  artByJulia = false,
+  juliaReason,
 }: {
   requiresArt: boolean;
   services: string[];
-  extraGuidance?: string[];
+  /** A tabela não exigia ART; a Julia-1 exigiu. */
+  artByJulia?: boolean;
+  juliaReason?: string;
 }) {
   if (!requiresArt) {
     return (
@@ -30,8 +33,11 @@ export function ArtRequirement({
   return (
     <Alert variant="warn">
       <span aria-hidden>⚠</span>
-      <AlertTitle>Esta obra exige ART/RRT</AlertTitle>
+      <AlertTitle>
+        Esta obra exige ART/RRT {artByJulia && <OriginTag origin="julia" reason={juliaReason} />}
+      </AlertTitle>
       <AlertDescription className="text-foreground">
+        {artByJulia && <p>Pela tabela não seria exigida; a Julia-1 exigiu{juliaReason ? `: ${juliaReason}` : ""}.</p>}
         <p>Contrate um profissional habilitado. Para os serviços informados, procure:</p>
         <ul className="list-disc pl-4">
           {withGuidance.map((s) => (
@@ -44,11 +50,6 @@ export function ArtRequirement({
               Engenheiro civil (CREA) ou arquiteto (CAU), pela intervenção em fachada/estrutura <OriginTag origin="rules" />
             </li>
           )}
-          {extraGuidance.map((g) => (
-            <li key={g}>
-              {g} <OriginTag origin="julia" />
-            </li>
-          ))}
         </ul>
         <p>
           A ART/RRT deve cobrir <strong>todos</strong> os serviços acima e citar o endereço da unidade.

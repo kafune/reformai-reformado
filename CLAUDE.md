@@ -43,7 +43,8 @@ sindico@demo.com, morador@demo.com — senha `senha123`.
 app/(public)/login, cadastro/[signupCode]   app/(app)/obras, obras/nova, obras/[id], obras/[id]/imprimir, art, admin
 app/api/files/[documentId]/route.ts         # route handler: checa permissão e redireciona para URL assinada (1h)
 lib/db.ts auth.ts (getCurrentUser) password.ts permissions.ts (can/assertCan/getCaseForUser) format.ts
-lib/storage.ts (uploadFile/signedDownloadUrl) events.ts (logEvent) protocol.ts decision.ts ai.ts
+lib/storage.ts (uploadFile/signedDownloadUrl) events.ts (logEvent) protocol.ts ai.ts
+lib/decision.ts (Julia-1: só fetch + Zod + perguntas tipadas; testes com fetch mockado) julia.ts (cola com o banco: classifyWithRules, maybeRecommendRelease)
 lib/rules/   services.ts risk.ts checklist.ts status.ts merge.ts art.ts (+ *.test.ts)   # PURO
 lib/actions/ auth.ts signup.ts cases.ts documents.ts review.ts admin.ts  # "use server", finas; state.ts = ActionState
   (review.ts: reviewDocument, requestChanges, approveCase, rejectCase, confirmCompletion — sempre clique humano)
@@ -71,4 +72,8 @@ export async function approveCase(caseId: string, input: unknown) {
 - Mobile first: tudo funciona em 390px; tabelas rolam dentro do card.
 - Formulários: client component + `useActionState`; a action devolve `ActionState` (`error`, `fieldErrors`, `ok`).
   Upload passa pela server action (`bodySizeLimit` 25mb no next.config.ts). Erro de storage vira mensagem, não exceção.
+- Julia-1 (docs/julia-1-api.md): modelo de decisão tipado (choice/score/noul, probabilidades), não gera texto nem lê
+  arquivos. Decisão 1 (classificação) ao salvar a obra via `mergeClassification`; Decisão 3 (recomendação) quando todos os
+  documentos foram avaliados, só pré-preenche. Decisão 2 (parecer de documento) ficou com o Claude (Fase 7). A
+  justificativa gravada é pergunta → opção → probabilidade. Sem `JULIA_URL`, nada é chamado.
 - Não implementar nada da §13 (backlog) sem pedido. Em dúvida sobre o PLAN.md, perguntar.

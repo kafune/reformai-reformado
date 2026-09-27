@@ -52,7 +52,7 @@ export function describeEvent(e: EventRow, currentUserId: string): { who: string
     case "ai_suggestion":
       return { who: "IA", text: e.message ?? "deixou observações", kind: "default" };
     case "julia_decision":
-      return { who, text: e.message ?? "tomou uma decisão", kind: "julia" };
+      return { who, text: e.message ?? (data.kind === "release" ? "recomendou uma decisão" : "classificou a obra"), kind: "julia" };
     default:
       return { who, text: e.message ?? e.type, kind: "default" };
   }

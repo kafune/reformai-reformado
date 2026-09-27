@@ -9,6 +9,8 @@ import { logEvent } from "@/lib/events";
 import { assertCan, getCaseForUser } from "@/lib/permissions";
 import { GuardError, assertCanApprove, assertCanComplete, assertTransition } from "@/lib/rules/status";
 import { fromZodError, type ActionState } from "@/lib/actions/state";
+import { readReleaseRecommendation, type ReleaseOption } from "@/lib/decision";
+import { maybeRecommendRelease } from "@/lib/julia";
 
 const ReviewDocumentSchema = z
   .object({
@@ -42,9 +44,18 @@ export async function reviewDocument(documentId: string, _prev: ActionState, for
       data: { documentId, type: doc.type, status },
     });
   });
+  await maybeRecommendRelease(c.id); // Decisão 3 da Julia-1, quando todos os documentos foram avaliados
 
   revalidatePath(`/obras/${c.id}`);
   return { ok: true };
+}
+
+/** Registra se o humano aceitou ou alterou a recomendação da Julia-1 (base para medir qualidade). */
+function juliaOutcome(c: { releaseRecommendation: unknown }, action: ReleaseOption) {
+  const rec = readReleaseRecommendation(c.releaseRecommendation);
+  if (!rec) return {};
+  const accepted = rec.recommendation === action || (action === "approve" && rec.recommendation === "approve_with_conditions");
+  return { juliaRecommendation: rec.recommendation, juliaConfidence: rec.confidence, juliaAccepted: accepted };
 }
 
 const MessageSchema = z.object({ message: z.string().trim().min(5, "Explique o motivo (mínimo de 5 caracteres).").max(2000) });
@@ -67,6 +78,7 @@ export async function requestChanges(caseId: string, _prev: ActionState, formDat
       fromStatus: c.status,
       toStatus: "CHANGES_REQUESTED",
       message: parsed.data.message,
+      data: juliaOutcome(c, "request_changes"),
     });
   });
 
@@ -118,7 +130,7 @@ export async function approveCase(caseId: string, _prev: ActionState, formData: 
       fromStatus: c.status,
       toStatus: "APPROVED",
       message: conditions ?? null,
-      data: { artConfirmed, conditions: conditions ?? null },
+      data: { artConfirmed, conditions: conditions ?? null, ...juliaOutcome(c, conditions ? "approve_with_conditions" : "approve") },
     });
   });
 
@@ -145,6 +157,7 @@ export async function rejectCase(caseId: string, _prev: ActionState, formData: F
       fromStatus: c.status,
       toStatus: "REJECTED",
       message: parsed.data.message,
+      data: juliaOutcome(c, "reject"),
     });
   });
 

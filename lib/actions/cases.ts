@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getCurrentUser } from "@/lib/auth";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { db } from "@/lib/db";
 import { logEvent } from "@/lib/events";
 import { assertCan, getCaseForUser } from "@/lib/permissions";
@@ -13,6 +14,7 @@ import { requiredDocuments } from "@/lib/rules/checklist";
 import { calculateRisk } from "@/lib/rules/risk";
 import { SERVICE_KEYS, type ServiceKey } from "@/lib/rules/services";
 import { assertCanSubmit, assertTransition } from "@/lib/rules/status";
+import { classifyWithRules, logClassificationDecision, maybeRecommendRelease } from "@/lib/julia";
 import { fromZodError, type ActionState } from "@/lib/actions/state";
 
 const optionalDate = z
@@ -53,16 +55,10 @@ function parseCaseForm(formData: FormData) {
   });
 }
 
-/** Classificação pelas regras (piso). A Julia-1 entra na Fase 6 via mergeClassification. */
-function classify(data: z.infer<typeof CaseSchema>) {
+/** Regras = piso (PLAN.md §8.2/8.3). A Julia-1 só pode acrescentar, via mergeClassification. */
+function rulesFor(data: z.infer<typeof CaseSchema>) {
   const risk = calculateRisk(data.services, data);
-  return {
-    riskScore: risk.score,
-    riskLevel: risk.level,
-    requiresArt: risk.requiresArt,
-    requiredDocs: requiredDocuments(risk),
-    classifiedBy: "rules",
-  };
+  return { ...risk, requiredDocs: requiredDocuments(risk) };
 }
 
 export async function createCase(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -74,6 +70,7 @@ export async function createCase(_prev: ActionState, formData: FormData): Promis
   const parsed = parseCaseForm(formData);
   if (!parsed.success) return fromZodError(parsed.error);
   const data = parsed.data;
+  const outcome = await classifyWithRules({ ...data, contractorName: data.contractorName ?? null }, unit.condominiumId, rulesFor(data), null);
 
   const created = await db.$transaction(async (tx) => {
     const c = await tx.case.create({
@@ -91,10 +88,11 @@ export async function createCase(_prev: ActionState, formData: FormData): Promis
         plannedStart: data.plannedStart,
         plannedEnd: data.plannedEnd,
         contractorName: data.contractorName ?? null,
-        ...classify(data),
+        ...outcome.columns,
       },
     });
     await logEvent(tx, { caseId: c.id, userId: user.id, type: "status_changed", toStatus: "DRAFT", message: "Obra criada" });
+    await logClassificationDecision(tx, c.id, outcome);
     return c;
   });
 
@@ -109,7 +107,12 @@ export async function updateCase(caseId: string, _prev: ActionState, formData: F
   const parsed = parseCaseForm(formData);
   if (!parsed.success) return fromZodError(parsed.error);
   const data = parsed.data;
-  const classification = classify(data);
+  const outcome = await classifyWithRules(
+    { ...data, contractorName: data.contractorName ?? null, professionalName: c.professionalName, professionalType: c.professionalType, professionalReg: c.professionalReg, artNumber: c.artNumber },
+    c.condominiumId,
+    rulesFor(data),
+    caseId,
+  );
 
   await db.$transaction(async (tx) => {
     await tx.case.update({
@@ -123,7 +126,7 @@ export async function updateCase(caseId: string, _prev: ActionState, formData: F
         plannedStart: data.plannedStart,
         plannedEnd: data.plannedEnd,
         contractorName: data.contractorName ?? null,
-        ...classification,
+        ...outcome.columns,
       },
     });
     await logEvent(tx, {
@@ -131,8 +134,9 @@ export async function updateCase(caseId: string, _prev: ActionState, formData: F
       userId: user.id,
       type: "case_updated",
       message: "Obra editada",
-      data: { services: data.services, riskLevel: classification.riskLevel, requiresArt: classification.requiresArt },
+      data: { services: data.services, riskLevel: outcome.columns.riskLevel, requiresArt: outcome.columns.requiresArt },
     });
+    await logClassificationDecision(tx, caseId, outcome);
   });
 
   revalidatePath(`/obras/${caseId}`);
@@ -176,9 +180,10 @@ export async function submitCase(caseId: string): Promise<ActionState> {
   assertCanSubmit(c, docs); // regra pura: lança GuardError com o que falta
 
   await db.$transaction(async (tx) => {
-    await tx.case.update({ where: { id: caseId }, data: { status: "UNDER_REVIEW" } });
+    await tx.case.update({ where: { id: caseId }, data: { status: "UNDER_REVIEW", releaseRecommendation: Prisma.JsonNull } });
     await logEvent(tx, { caseId, userId: user.id, type: "status_changed", fromStatus: c.status, toStatus: "UNDER_REVIEW" });
   });
+  await maybeRecommendRelease(caseId); // só tem efeito se não houver documento pendente (ex.: risco baixo)
 
   revalidatePath(`/obras/${caseId}`);
   revalidatePath("/obras");

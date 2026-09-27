@@ -17,7 +17,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { JuliaRecommendation } from "@/components/case/julia-recommendation";
 import { approveCase, rejectCase, requestChanges } from "@/lib/actions/review";
+import type { ReleaseRecommendation } from "@/lib/decision";
 import type { ActionState } from "@/lib/actions/state";
 
 /** Decisão do síndico/admin: liberar (clique humano), pedir correção ou recusar. */
@@ -25,15 +27,20 @@ export function DecisionCard({
   caseId,
   blockers,
   requiresArt,
+  recommendation,
 }: {
   caseId: string;
   /** Bloqueios que não dependem da conferência da ART (documentos pendentes/reprovados). */
   blockers: string[];
   requiresArt: boolean;
+  /** Pré-preenchimento da Julia-1 (Decisão 3), quando houver. */
+  recommendation: ReleaseRecommendation | null;
 }) {
   const [approveState, approveAction, approving] = useActionState<ActionState, FormData>(approveCase.bind(null, caseId), {});
   const [artConfirmed, setArtConfirmed] = useState(false);
   const blocked = blockers.length > 0 || (requiresArt && !artConfirmed);
+  const rec = recommendation?.recommendation ?? null;
+  const hint = (option: string) => (rec === option ? " ✦" : "");
 
   return (
     <Card>
@@ -41,6 +48,7 @@ export function DecisionCard({
         <CardTitle>Decisão</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3.5">
+        {recommendation && <JuliaRecommendation rec={recommendation} />}
         {blockers.length > 0 ? (
           <div className="rounded-lg border border-[#fecaca] bg-[#fef2f2] px-3 py-2.5 text-xs">
             <strong>Ainda não dá para liberar</strong>
@@ -63,7 +71,11 @@ export function DecisionCard({
               id="conditions"
               name="conditions"
               className="min-h-20"
-              placeholder="Ex.: obras só de seg. a sex., 8h–17h; avisar a portaria antes de subir material."
+              placeholder={
+                rec === "approve_with_conditions"
+                  ? "A Julia-1 sugere liberar com condições — escreva quais (ex.: horário, avisos, cuidados)."
+                  : "Ex.: obras só de seg. a sex., 8h–17h; avisar a portaria antes de subir material."
+              }
             />
             <FieldError messages={approveState.fieldErrors?.conditions} />
           </div>
@@ -82,8 +94,13 @@ export function DecisionCard({
             </label>
           )}
           {approveState.error && <p className="text-xs text-danger">{approveState.error}</p>}
-          <Button type="submit" disabled={blocked || approving} title={blocked ? "Resolva os pontos acima para liberar" : undefined}>
-            {approving ? "Liberando…" : "Liberar obra"}
+          <Button
+            type="submit"
+            disabled={blocked || approving}
+            title={blocked ? "Resolva os pontos acima para liberar" : undefined}
+            className={rec === "approve" || rec === "approve_with_conditions" ? "ring-2 ring-julia/40 ring-offset-1" : undefined}
+          >
+            {approving ? "Liberando…" : `Liberar obra${hint("approve")}${hint("approve_with_conditions")}`}
           </Button>
         </form>
 
@@ -92,8 +109,8 @@ export function DecisionCard({
             caseId={caseId}
             kind="changes"
             trigger={
-              <Button variant="outline" className="flex-1">
-                Pedir correção
+              <Button variant="outline" className={rec === "request_changes" ? "flex-1 ring-2 ring-julia/40 ring-offset-1" : "flex-1"}>
+                Pedir correção{hint("request_changes")}
               </Button>
             }
           />
@@ -101,8 +118,8 @@ export function DecisionCard({
             caseId={caseId}
             kind="reject"
             trigger={
-              <Button variant="destructive" className="flex-1">
-                Recusar
+              <Button variant="destructive" className={rec === "reject" ? "flex-1 ring-2 ring-julia/40 ring-offset-1" : "flex-1"}>
+                Recusar{hint("reject")}
               </Button>
             }
           />

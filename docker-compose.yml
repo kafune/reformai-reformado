@@ -1,0 +1,66 @@
+# Dev local: Postgres + MinIO (S3-compatível). Sem Redis.
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: reformai
+      POSTGRES_PASSWORD: reformai
+      POSTGRES_DB: reformai
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000" # API S3
+      - "9001:9001" # console web
+    environment:
+      MINIO_ROOT_USER: reformai
+      MINIO_ROOT_PASSWORD: reformai123
+    volumes:
+      - minio-data:/data
+
+  # Cria o bucket na primeira subida.
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 reformai reformai123; do sleep 1; done;
+      mc mb --ignore-existing local/reformai;
+      "
+
+  # Julia-1 (opcional): wrapper REST comunitário do modelo de decisão, roda em CPU.
+  # Baixa o checkpoint (~600 MB) na primeira subida. Sobe com: docker compose --profile julia up
+  # Depois aponte JULIA_URL=http://localhost:8000 no .env.
+  julia:
+    profiles: ["julia"]
+    build: https://github.com/ViniciuszXL/julia-1-api.git
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_PROVIDER: julia
+      MODEL_CPU_THREADS: 4
+      MODEL_RATE_LIMIT_RPM: 0 # sem limite por IP dentro da rede local
+    volumes:
+      - julia-models:/models
+
+  # OCR (opcional): PaddleOCR PP-OCRv5 em CPU, serving oficial. Sobe com: docker compose --profile ocr up
+  # Depois aponte OCR_URL=http://localhost:8080 no .env. Ver docs/ocr.md.
+  ocr:
+    profiles: ["ocr"]
+    build: ./docker/ocr
+    ports:
+      - "8080:8080"
+    volumes:
+      - ocr-models:/root/.paddlex
+
+volumes:
+  postgres-data:
+  minio-data:
+  julia-models:
+  ocr-models:

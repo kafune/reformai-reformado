@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel ART/RRT · ReformAI</title><link rel="stylesheet" href="assets/app.css"></head>
+<body data-role="ADMIN" data-active="art">
+<div class="shell">
+  <aside id="sidebar"></aside>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+      <div class="page-head">
+        <div><h1>Painel ART/RRT</h1><p class="sub">Quais obras precisam de ART/RRT e em que pé estão — todos os condomínios.</p></div>
+        <select class="select" style="width:auto"><option>Todos os condomínios (6)</option><option>Jd. das Acácias</option><option>Ed. Monte Verde</option></select>
+      </div>
+
+      <div class="kpis">
+        <div class="card kpi"><div class="l">Obras que exigem ART/RRT</div><div class="v">23</div><div class="small muted">de 41 obras ativas</div></div>
+        <div class="card kpi"><div class="l">ART faltando</div><div class="v">6</div><div class="small muted">morador ainda não enviou</div></div>
+        <div class="card kpi"><div class="l">Aguardando conferência</div><div class="v">4</div><div class="small muted">enviada, falta conferir</div></div>
+        <div class="card kpi alarm"><div class="l">⚠ Em execução sem ART aprovada</div><div class="v">1</div><div class="small">não deveria acontecer</div></div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div class="pills">
+            <span class="pill on">Todas · 23</span>
+            <span class="pill">Faltando · 6</span>
+            <span class="pill">Enviada · 4</span>
+            <span class="pill">Aprovada · 12</span>
+            <span class="pill">Reprovada · 1</span>
+          </div>
+          <select class="select" style="margin-left:auto"><option>Qualquer status da obra</option><option>Em execução</option></select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Obra</th><th>Condomínio · unidade</th><th>Serviços</th><th>Profissional</th><th>Nº ART/RRT</th><th>Situação da ART</th><th>Status da obra</th></tr></thead>
+            <tbody>
+              <tr class="alarm">
+                <td><a class="link" href="#">RF-2026-000094</a></td>
+                <td>Ed. Monte Verde<div class="small muted">Torre 2 · 81</div></td>
+                <td>Gás</td>
+                <td>Eng. Paulo Dias<div class="small muted">CREA SP-5069988776</div></td>
+                <td class="mono">2620250011223</td>
+                <td><span class="badge b-rejected">Reprovada</span><div class="small" style="color:var(--danger)">não cobre gás</div></td>
+                <td><span class="badge b-progress">Em execução</span></td>
+              </tr>
+              <tr>
+                <td><a class="link" href="07-sindico-analise.html">RF-2026-000118</a></td>
+                <td>Jd. das Acácias<div class="small muted">A · 102</div></td>
+                <td>Hidráulica, Impermeabilização</td>
+                <td>Arq. Renata Alves<div class="small muted">CAU A123456-7</div></td>
+                <td class="mono">2620259876543</td>
+                <td><span class="badge b-review">Enviada</span></td>
+                <td><span class="badge b-review">Em análise</span></td>
+              </tr>
+              <tr>
+                <td><a class="link" href="05-morador-obra-detalhe.html">RF-2026-000123</a></td>
+                <td>Jd. das Acácias<div class="small muted">B · 304</div></td>
+                <td>Elétrica, Demolição de alvenaria</td>
+                <td>Eng. Carlos Pereira<div class="small muted">CREA SP-5061234567</div></td>
+                <td class="mono">2620251234567</td>
+                <td><span class="badge b-review">Enviada</span></td>
+                <td><span class="badge b-draft">Rascunho</span></td>
+              </tr>
+              <tr>
+                <td><a class="link" href="#">RF-2026-000122</a></td>
+                <td>Jd. das Acácias<div class="small muted">B · 701</div></td>
+                <td>Gás, Mudança de layout</td>
+                <td class="muted">—</td>
+                <td class="muted">—</td>
+                <td><span class="badge b-changes">Faltando</span></td>
+                <td><span class="badge b-review">Em análise</span></td>
+              </tr>
+              <tr>
+                <td><a class="link" href="#">RF-2026-000101</a></td>
+                <td>Res. Alto da Serra<div class="small muted">12</div></td>
+                <td>Fachada, Esquadrias externas</td>
+                <td>Eng. Beatriz Costa<div class="small muted">CREA MG-1402233</div></td>
+                <td class="mono">1420250456789</td>
+                <td><span class="badge b-approved">Aprovada</span></td>
+                <td><span class="badge b-progress">Em execução</span></td>
+              </tr>
+              <tr>
+                <td><a class="link" href="#">RF-2026-000099</a></td>
+                <td>Ed. Monte Verde<div class="small muted">Torre 1 · 42</div></td>
+                <td>Troca de piso sem demolição <span class="origin j">ART pela Julia-1</span><div class="small muted">piso radiante elétrico</div></td>
+                <td>Arq. Diego Martins<div class="small muted">CAU A998877-1</div></td>
+                <td class="mono">2620250778899</td>
+                <td><span class="badge b-approved">Aprovada</span></td>
+                <td><span class="badge b-approved">Liberada</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="hint">Linha vermelha = obra em execução cuja ART/RRT não está aprovada. Síndicos veem só o próprio condomínio.</p>
+    </main>
+  </div>
+</div>
+<script src="assets/app.js"></script>
+</body></html>

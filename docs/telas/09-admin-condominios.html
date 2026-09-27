@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Condomínios · ReformAI</title><link rel="stylesheet" href="assets/app.css"></head>
+<body data-role="ADMIN" data-active="condominios">
+<div class="shell">
+  <aside id="sidebar"></aside>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+      <div class="page-head">
+        <div><h1>Condomínios</h1><p class="sub">6 condomínios administrados</p></div>
+        <button class="btn btn-primary">＋ Novo condomínio</button>
+      </div>
+      <div class="card">
+        <div class="toolbar"><input class="input" placeholder="Buscar por nome ou cidade"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Condomínio</th><th>Cidade</th><th>Síndico</th><th>Unidades</th><th>Moradores cadastrados</th><th>Obras ativas</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><a class="link" href="10-admin-condominio-detalhe.html">Residencial Jardim das Acácias</a></td><td>São Paulo/SP</td><td>Roberto Mendes</td><td>48</td><td>31</td><td>9</td><td><span class="badge b-approved">Ativo</span></td><td><a class="btn btn-sm" href="10-admin-condominio-detalhe.html">Abrir</a></td></tr>
+              <tr><td><a class="link" href="#">Edifício Monte Verde</a></td><td>São Paulo/SP</td><td>Sílvia Prado</td><td>96</td><td>58</td><td>14</td><td><span class="badge b-approved">Ativo</span></td><td><a class="btn btn-sm" href="#">Abrir</a></td></tr>
+              <tr><td><a class="link" href="#">Residencial Alto da Serra</a></td><td>Belo Horizonte/MG</td><td>Hélio Santos</td><td>24</td><td>20</td><td>6</td><td><span class="badge b-approved">Ativo</span></td><td><a class="btn btn-sm" href="#">Abrir</a></td></tr>
+              <tr><td><a class="link" href="#">Condomínio Parque das Flores</a></td><td>Campinas/SP</td><td class="muted">sem síndico</td><td>0</td><td>0</td><td>0</td><td><span class="badge b-cancel">Inativo</span></td><td><a class="btn btn-sm" href="#">Abrir</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="assets/app.js"></script>
+</body></html>

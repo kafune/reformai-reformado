@@ -1,0 +1,171 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Tokens mapeados de docs/telas/assets/app.css (neutros + 1 cor primária). */
+:root {
+  --radius: 10px;
+
+  --background: #ffffff;
+  --foreground: #1c1917;
+  --surface: #f7f7f5;
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --popover: #ffffff;
+  --popover-foreground: #1c1917;
+  --primary: #166534;
+  --primary-hover: #14532d;
+  --primary-soft: #dcfce7;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f4;
+  --secondary-foreground: #1c1917;
+  --muted: #f5f5f4;
+  --muted-foreground: #78716c;
+  --accent: #f5f5f4;
+  --accent-foreground: #1c1917;
+  --destructive: #b91c1c;
+  --border: #e7e5e4;
+  --input: #e7e5e4;
+  --ring: #15803d;
+
+  /* Semânticos */
+  --info: #1d4ed8;
+  --info-soft: #dbeafe;
+  --warn: #b45309;
+  --warn-soft: #fef3c7;
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  --ok: #15803d;
+  --ok-soft: #dcfce7;
+
+  /* Tudo que vem da Julia-1 é roxo */
+  --julia: #6d28d9;
+  --julia-soft: #ede9fe;
+  --julia-border: #ddd6fe;
+  --julia-text: #4c1d95;
+
+  /* Status da obra (badge: fundo / texto) */
+  --status-draft: #57534e;
+  --status-draft-soft: #f5f5f4;
+  --status-review: var(--info);
+  --status-review-soft: var(--info-soft);
+  --status-changes: var(--warn);
+  --status-changes-soft: var(--warn-soft);
+  --status-approved: var(--ok);
+  --status-approved-soft: var(--ok-soft);
+  --status-rejected: var(--danger);
+  --status-rejected-soft: var(--danger-soft);
+  --status-progress: #0369a1;
+  --status-progress-soft: #e0f2fe;
+  --status-done: #166534;
+  --status-done-soft: #f0fdf4;
+  --status-cancelled: #78716c;
+  --status-cancelled-soft: #f5f5f4;
+
+  /* Nível de risco */
+  --risk-low: var(--ok);
+  --risk-low-soft: var(--ok-soft);
+  --risk-medium: var(--warn);
+  --risk-medium-soft: var(--warn-soft);
+  --risk-high: #c2410c;
+  --risk-high-soft: #ffedd5;
+  --risk-critical: var(--danger);
+  --risk-critical-soft: var(--danger-soft);
+}
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+
+  --color-julia: var(--julia);
+  --color-julia-soft: var(--julia-soft);
+  --color-julia-border: var(--julia-border);
+  --color-julia-text: var(--julia-text);
+
+  --color-status-draft: var(--status-draft);
+  --color-status-draft-soft: var(--status-draft-soft);
+  --color-status-review: var(--status-review);
+  --color-status-review-soft: var(--status-review-soft);
+  --color-status-changes: var(--status-changes);
+  --color-status-changes-soft: var(--status-changes-soft);
+  --color-status-approved: var(--status-approved);
+  --color-status-approved-soft: var(--status-approved-soft);
+  --color-status-rejected: var(--status-rejected);
+  --color-status-rejected-soft: var(--status-rejected-soft);
+  --color-status-progress: var(--status-progress);
+  --color-status-progress-soft: var(--status-progress-soft);
+  --color-status-done: var(--status-done);
+  --color-status-done-soft: var(--status-done-soft);
+  --color-status-cancelled: var(--status-cancelled);
+  --color-status-cancelled-soft: var(--status-cancelled-soft);
+
+  --color-risk-low: var(--risk-low);
+  --color-risk-low-soft: var(--risk-low-soft);
+  --color-risk-medium: var(--risk-medium);
+  --color-risk-medium-soft: var(--risk-medium-soft);
+  --color-risk-high: var(--risk-high);
+  --color-risk-high-soft: var(--risk-high-soft);
+  --color-risk-critical: var(--risk-critical);
+  --color-risk-critical-soft: var(--risk-critical-soft);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-surface text-foreground text-sm antialiased;
+  }
+}
+
+/* Termo de liberação (app/(print)): A4 sem margens do navegador; o próprio termo tem as margens. */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html,
+  body {
+    background: #fff;
+  }
+  .print-sheet {
+    padding: 22mm 20mm;
+  }
+}

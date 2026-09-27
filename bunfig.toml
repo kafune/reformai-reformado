@@ -1,0 +1,3 @@
+# `bun test` roda só os testes de lib/ (regras puras e permissões). Sem DOM, sem Next.
+[test]
+root = "lib"

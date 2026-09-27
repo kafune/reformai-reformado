@@ -7,12 +7,16 @@ export const DOC_STATUS_LABEL: Record<DocStatus, string> = {
   REJECTED: "Reprovado",
 };
 
-const VARIANT: Record<DocStatus, "info" | "ok" | "destructive"> = {
-  PENDING: "info",
-  APPROVED: "ok",
-  REJECTED: "destructive",
+const VARIANT: Record<DocStatus, "azulejo" | "green" | "iron"> = {
+  PENDING: "azulejo",
+  APPROVED: "green",
+  REJECTED: "iron",
 };
 
 export function DocStatusBadge({ status }: { status: DocStatus }) {
-  return <Badge variant={VARIANT[status]}>{DOC_STATUS_LABEL[status]}</Badge>;
+  return (
+    <Badge variant={VARIANT[status]} dot>
+      {DOC_STATUS_LABEL[status]}
+    </Badge>
+  );
 }

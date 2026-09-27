@@ -4,25 +4,25 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
+// Botões do "Concreto Verde": cantos de 4px, verde-canteiro sólido no primário,
+// contorno ink no secundário (outline), ferro no destrutivo, violeta na Julia-1.
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm border font-medium transition-colors duration-150 ease-rai disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-green-400 aria-invalid:ring-iron-300 aria-invalid:border-iron-500",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover",
-        destructive:
-          "bg-background text-danger border border-danger/30 shadow-xs hover:bg-danger-soft focus-visible:ring-danger/20",
-        outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        julia: "bg-julia-soft text-julia border border-julia-border hover:bg-julia-soft/70",
+        default: "bg-green-700 text-bone-50 border-green-700 hover:bg-green-800 hover:border-green-800",
+        outline: "bg-transparent text-ink-900 border-ink-900 hover:bg-ink-900 hover:text-bone-50",
+        secondary: "bg-green-100 text-green-800 border-transparent hover:bg-green-200",
+        ghost: "bg-transparent text-ink-700 border-transparent hover:bg-bone-200",
+        destructive: "bg-transparent text-iron-700 border-iron-300 hover:bg-iron-100 hover:border-iron-500",
+        link: "border-transparent text-green-700 underline-offset-4 hover:underline",
+        julia: "bg-violet-100 text-violet-700 border-violet-300 hover:bg-violet-50",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-lg px-6 has-[>svg]:px-4",
+        default: "h-10 px-4 text-sm max-md:min-h-11",
+        sm: "h-8 px-3 text-sm gap-1.5",
+        lg: "h-12 px-5 text-base gap-2.5",
         icon: "size-9",
       },
     },
@@ -45,13 +45,7 @@ function Button({
   }) {
   const Comp = asChild ? Slot.Root : "button";
 
-  return (
-    <Comp
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
-  );
+  return <Comp data-slot="button" className={cn(buttonVariants({ variant, size, className }))} {...props} />;
 }
 
 export { Button, buttonVariants };

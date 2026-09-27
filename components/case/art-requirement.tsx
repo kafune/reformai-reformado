@@ -1,4 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Icon } from "@/components/ui/icon";
 import { OriginTag } from "@/components/origin-tag";
 import { SERVICE_BY_KEY, isServiceKey } from "@/lib/rules/services";
 
@@ -18,11 +19,11 @@ export function ArtRequirement({
   if (!requiresArt) {
     return (
       <Alert variant="ok">
-        <span aria-hidden>✓</span>
+        <Icon name="check" />
         <AlertTitle>Esta obra não exige ART/RRT</AlertTitle>
         <AlertDescription>
-          Pelos serviços informados, não é preciso contratar responsável técnico. Se o escopo mudar, edite a obra:
-          o cálculo é refeito.
+          Pelos serviços informados, não é preciso contratar responsável técnico. Se o escopo mudar, edite a obra: o cálculo é
+          refeito.
         </AlertDescription>
       </Alert>
     );
@@ -32,11 +33,11 @@ export function ArtRequirement({
 
   return (
     <Alert variant="warn">
-      <span aria-hidden>⚠</span>
+      <Icon name="alert" />
       <AlertTitle>
         Esta obra exige ART/RRT {artByJulia && <OriginTag origin="julia" reason={juliaReason} />}
       </AlertTitle>
-      <AlertDescription className="text-foreground">
+      <AlertDescription className="text-ink-700">
         {artByJulia && <p>Pela tabela não seria exigida; a Julia-1 exigiu{juliaReason ? `: ${juliaReason}` : ""}.</p>}
         <p>Contrate um profissional habilitado. Para os serviços informados, procure:</p>
         <ul className="list-disc pl-4">

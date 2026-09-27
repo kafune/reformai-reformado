@@ -67,8 +67,8 @@ export async function approveCase(caseId: string, input: unknown) {
 ```
 
 ## Convenções
-- Código em inglês, textos em pt-BR. Server Components para leitura, Server Actions para mutação. Tokens de cor (status,
-  risco, Julia-1 em roxo) em `app/globals.css`; mockups em `docs/telas/` (PLAN.md §14).
+- Código em inglês, textos em pt-BR. Server Components para leitura, Server Actions para mutação. Design "Concreto Verde"
+  (o mesmo do reformai): tokens `--rai-*`/status/risco/Julia-1 em `app/globals.css`, IBM Plex, `components/ui/icon.tsx`, `PageHeader`+`PageBody`.
 - Botão bloqueado sempre diz o que falta. Cada exigência mostra a origem: "pela tabela" ou "pela Julia-1: motivo".
 - Mobile first: tudo funciona em 390px; tabelas rolam dentro do card. Formulários: client component + `useActionState`;
   a action devolve `ActionState`. Upload passa pela server action (`bodySizeLimit` 25mb). Erro de storage vira mensagem.

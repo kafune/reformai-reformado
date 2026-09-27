@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Icon } from "@/components/ui/icon";
 import { cancelCase } from "@/lib/actions/cases";
 
 export function CancelCaseButton({ caseId, protocol }: { caseId: string; protocol: string }) {
@@ -23,7 +24,10 @@ export function CancelCaseButton({ caseId, protocol }: { caseId: string; protoco
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="destructive">Cancelar obra</Button>
+        <Button variant="destructive" size="sm">
+          <Icon name="close" />
+          Cancelar obra
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -32,10 +36,10 @@ export function CancelCaseButton({ caseId, protocol }: { caseId: string; protoco
             A obra fica registrada como cancelada e não pode ser reaberta. Se quiser fazê-la depois, cadastre uma nova.
           </DialogDescription>
         </DialogHeader>
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <p className="text-sm text-iron-600">{error}</p>}
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Voltar</Button>
+            <Button variant="ghost">Voltar</Button>
           </DialogClose>
           <Button
             variant="destructive"

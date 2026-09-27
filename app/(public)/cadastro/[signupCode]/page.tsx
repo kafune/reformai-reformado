@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { SignupForm } from "@/components/signup-form";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Logo } from "@/components/ui/logo";
 import { db } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Criar conta de morador" };
@@ -19,25 +20,32 @@ export default async function SignupPage({ params }: PageProps<"/cadastro/[signu
   const blocks = condominium.units.map((u) => u.block).filter((b) => b !== "");
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(1200px_500px_at_50%_-10%,#dcfce7_0%,transparent_60%)] px-4 py-6">
-      <Card className="w-full max-w-[520px] py-7">
-        <CardContent className="flex flex-col gap-3 px-7">
-          <div className="mb-1 flex items-center gap-2.5 text-[15px] font-bold">
-            <span className="grid size-7 place-items-center rounded-lg bg-primary text-sm text-primary-foreground">
-              R
-            </span>
-            ReformAI
-          </div>
-          <Badge variant="ok" className="w-fit">
+    <div className="flex min-h-screen flex-col bg-paper px-6 py-10 sm:px-10">
+      <div className="mx-auto w-full max-w-[520px]">
+        <Logo size={32} variant="lockup" />
+
+        <p className="mt-8 font-mono text-xs tracking-caps text-green-700 uppercase">Cadastro de morador</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink-900">Criar conta de morador</h1>
+        <div className="mt-3">
+          <Badge variant="green" dot>
             {condominium.name} · {condominium.city}/{condominium.state}
           </Badge>
-          <h1 className="text-[22px] font-semibold tracking-tight">Criar conta de morador</h1>
-          <p className="mb-2 text-muted-foreground">
-            Com a conta você registra reformas da sua unidade e acompanha a liberação.
-          </p>
+        </div>
+        <p className="mt-3 mb-6 text-base text-ink-500">
+          Com a conta você registra reformas da sua unidade e acompanha a liberação.
+        </p>
+
+        <div className="rounded-md bg-surface p-5 shadow-hair md:p-6">
           <SignupForm signupCode={signupCode} blocks={blocks} />
-        </CardContent>
-      </Card>
-    </main>
+        </div>
+
+        <p className="mt-6 border-t border-divider pt-4 text-sm text-ink-500">
+          Já tem conta?{" "}
+          <Link href="/login" className="font-medium text-green-700 hover:underline">
+            Entrar
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 }

@@ -3,6 +3,7 @@
 import { startTransition, useActionState, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 import { uploadDocument } from "@/lib/actions/documents";
 import type { ActionState } from "@/lib/actions/state";
 import type { DocumentType } from "@/lib/rules/checklist";
@@ -29,9 +30,10 @@ export function UploadDocumentForm({ caseId, type, label = "Anexar" }: { caseId:
         }}
       />
       <Button type="button" size="sm" disabled={pending} onClick={() => fileRef.current?.click()}>
+        <Icon name="upload" />
         {pending ? "Enviando…" : label}
       </Button>
-      {state.error && <p className="text-xs text-danger">{state.error}</p>}
+      {state.error && <p className="max-w-56 text-right text-xs text-iron-600">{state.error}</p>}
     </form>
   );
 }

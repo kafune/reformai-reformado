@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { CaseForm, type CaseFormValues } from "@/components/case/case-form";
-import { PageHeader } from "@/components/page-header";
+import { PageBody, PageHeader } from "@/components/page-header";
 import { updateCase } from "@/lib/actions/cases";
 import { getCurrentUser } from "@/lib/auth";
 import { juliaConfig } from "@/lib/decision";
@@ -30,11 +30,14 @@ export default async function EditCasePage({ params }: PageProps<"/obras/[id]/ed
 
   return (
     <>
-      <div>
-        <p className="mb-1.5 text-xs text-muted-foreground">Minhas obras / {c.protocol} / Editar</p>
-        <PageHeader title={`Editar ${c.protocol}`} subtitle="Ao salvar, o risco e os documentos exigidos são recalculados." />
-      </div>
-      <CaseForm action={updateCase.bind(null, id)} initial={initial} cancelHref={`/obras/${id}`} submitLabel="Salvar alterações" canSuggest={juliaConfig().enabled} />
+      <PageHeader
+        breadcrumb={[{ label: "Minhas obras", href: "/obras" }, { label: c.protocol, href: `/obras/${id}` }, "Editar"]}
+        title={`Editar ${c.protocol}`}
+        subtitle="Ao salvar, o risco e os documentos exigidos são recalculados."
+      />
+      <PageBody>
+        <CaseForm action={updateCase.bind(null, id)} initial={initial} cancelHref={`/obras/${id}`} submitLabel="Salvar alterações" canSuggest={juliaConfig().enabled} />
+      </PageBody>
     </>
   );
 }

@@ -3,6 +3,8 @@ import Link from "next/link";
 
 import { PrintButton } from "@/components/print-button";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
+import { Logo } from "@/components/ui/logo";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatDate, formatDateTime, unitLabel } from "@/lib/format";
@@ -35,9 +37,9 @@ export default async function PrintTermPage({ params }: PageProps<"/obras/[id]/i
   ]);
 
   const services = c.services.filter(isServiceKey).map((k) => SERVICE_BY_KEY[k].label);
-  const professionalType = c.professionalType === "ARCHITECT" ? "Arq." : c.professionalType === "ENGINEER" ? "Eng." : "";
-  const period =
-    c.plannedStart || c.plannedEnd ? `${formatDate(c.plannedStart)} a ${formatDate(c.plannedEnd)}` : "—";
+  const hasPrefix = /^(eng|arq)\.?\s/i.test(c.professionalName ?? "");
+  const professionalType = hasPrefix ? "" : c.professionalType === "ARCHITECT" ? "Arq." : c.professionalType === "ENGINEER" ? "Eng." : "";
+  const period = c.plannedStart || c.plannedEnd ? `${formatDate(c.plannedStart)} a ${formatDate(c.plannedEnd)}` : "—";
   const approver = approval?.user ? `${approval.user.name} (${ROLE_LABEL[approval.user.role] ?? approval.user.role})` : null;
   const confirmer = artConfirmation?.user ? `${artConfirmation.user.name} (${(ROLE_LABEL[artConfirmation.user.role] ?? "").toLowerCase()})` : null;
 
@@ -45,33 +47,34 @@ export default async function PrintTermPage({ params }: PageProps<"/obras/[id]/i
     <>
       <div className="mx-auto flex max-w-[210mm] justify-between gap-2 px-3 pt-4 print:hidden">
         <Button asChild variant="outline">
-          <Link href={`/obras/${c.id}`}>Voltar</Link>
+          <Link href={`/obras/${c.id}`}>
+            <Icon name="arrowL" />
+            Voltar
+          </Link>
         </Button>
         <PrintButton />
       </div>
 
-      <article className="print-sheet relative mx-3 my-3 bg-white p-5 text-[13px] shadow-md md:mx-auto md:my-6 md:min-h-[297mm] md:w-[210mm] md:p-[22mm_20mm] print:m-0 print:min-h-0 print:w-auto print:shadow-none">
+      <article className="print-sheet relative mx-3 my-3 bg-white p-5 text-[13px] text-ink-900 shadow-3 md:mx-auto md:my-6 md:min-h-[297mm] md:w-[210mm] md:p-[22mm_20mm] print:m-0 print:min-h-0 print:w-auto print:shadow-none">
         {!released && (
-          <div className="mb-4 rounded-lg border border-warn/40 bg-warn-soft px-3 py-2 text-xs font-semibold text-warn">
-            PRÉVIA — a obra ainda não foi liberada (status: {STATUS_LABEL[c.status]}). Este termo só vale depois da liberação.
+          <div className="mb-4 rounded-sm border border-ochre-300 bg-ochre-50 px-3 py-2 font-mono text-[11px] font-semibold tracking-wide text-ochre-800 uppercase">
+            Prévia — a obra ainda não foi liberada (status: {STATUS_LABEL[c.status]}). Este termo só vale depois da liberação.
           </div>
         )}
 
         <header className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-center gap-2.5 text-[15px] font-bold">
-            <span className="grid size-7 place-items-center rounded-lg bg-primary text-sm text-primary-foreground">R</span>
-            ReformAI
-          </div>
-          <div className="text-right text-xs text-muted-foreground">
-            Protocolo <strong className="font-mono text-foreground">{c.protocol}</strong>
+          <Logo size={30} variant="lockup" />
+          <div className="text-right text-xs text-ink-500">
+            Protocolo <strong className="font-mono text-ink-900">{c.protocol}</strong>
             <br />
             Emitido em {formatDateTime(new Date())}
           </div>
         </header>
 
-        <h1 className="mt-5 text-xl font-semibold tracking-tight">Termo de liberação de obra</h1>
-        <p className="text-muted-foreground">
-          {c.condominium.name} — {c.condominium.address} — {c.condominium.city}/{c.condominium.state}
+        <p className="mt-6 font-mono text-[10px] tracking-caps text-green-700 uppercase">Termo de liberação de obra</p>
+        <h1 className="mt-1 text-xl font-semibold tracking-tight">{c.condominium.name}</h1>
+        <p className="text-ink-500">
+          {c.condominium.address} — {c.condominium.city}/{c.condominium.state}
         </p>
 
         <Section title="Unidade e responsável">
@@ -103,9 +106,7 @@ export default async function PrintTermPage({ params }: PageProps<"/obras/[id]/i
               <span className="font-mono">{c.artNumber ?? "—"}</span>
             </Row>
             <Row label="Conferência">
-              {artConfirmation && confirmer
-                ? `ART/RRT conferida por ${confirmer} em ${formatDate(artConfirmation.createdAt)}`
-                : "ART/RRT ainda não conferida"}
+              {artConfirmation && confirmer ? `ART/RRT conferida por ${confirmer} em ${formatDate(artConfirmation.createdAt)}` : "ART/RRT ainda não conferida"}
             </Row>
           </Section>
         )}
@@ -120,22 +121,21 @@ export default async function PrintTermPage({ params }: PageProps<"/obras/[id]/i
         </Section>
 
         <div className="mt-12 grid grid-cols-2 gap-10">
-          <div className="border-t border-foreground pt-1.5 text-center text-xs">
-            {approval?.user?.name ?? " "}
+          <div className="border-t border-ink-900 pt-1.5 text-center text-xs">
+            {approval?.user?.name ?? " "}
             <br />
             {approval?.user ? (ROLE_LABEL[approval.user.role] ?? "") : "Síndico / Administradora"}
           </div>
-          <div className="border-t border-foreground pt-1.5 text-center text-xs">
+          <div className="border-t border-ink-900 pt-1.5 text-center text-xs">
             {c.resident.name}
             <br />
             Morador
           </div>
         </div>
 
-        <p className="mt-10 border-l-[3px] pl-2.5 text-xs text-muted-foreground">
-          Este termo registra a liberação administrativa da obra pelo condomínio. A plataforma ReformAI{" "}
-          <strong>não emite ART/RRT</strong> nem assume responsabilidade técnica pela obra: a responsabilidade técnica é
-          exclusiva do profissional habilitado indicado acima.
+        <p className="mt-10 border-l-[3px] border-green-700 pl-2.5 text-xs text-ink-500">
+          Este termo registra a liberação administrativa da obra pelo condomínio. A plataforma ReformAI <strong>não emite ART/RRT</strong> nem
+          assume responsabilidade técnica pela obra: a responsabilidade técnica é exclusiva do profissional habilitado indicado acima.
         </p>
       </article>
     </>
@@ -145,7 +145,7 @@ export default async function PrintTermPage({ params }: PageProps<"/obras/[id]/i
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-5">
-      <h2 className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">{title}</h2>
+      <h2 className="mb-2 font-mono text-[10px] font-medium tracking-caps text-ink-500 uppercase">{title}</h2>
       <table className="w-full border-collapse">
         <tbody>{children}</tbody>
       </table>
@@ -156,8 +156,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <tr>
-      <th className="w-[34%] border bg-[#fafaf9] px-2 py-1.5 text-left font-medium">{label}</th>
-      <td className="border px-2 py-1.5">{children}</td>
+      <th className="w-[34%] border border-ink-200 bg-bone-50 px-2 py-1.5 text-left font-medium text-ink-700">{label}</th>
+      <td className="border border-ink-200 px-2 py-1.5">{children}</td>
     </tr>
   );
 }

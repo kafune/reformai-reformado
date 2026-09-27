@@ -1,4 +1,4 @@
-// Modelo de dados: PLAN.md §9. Os modelos entram na Fase 2.
+// Modelo de dados: PLAN.md §9. Nomes em inglês; textos de tela em português.
 
 generator client {
   provider = "prisma-client"
@@ -7,4 +7,179 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  SYNDIC
+  RESIDENT
+}
+
+enum CaseStatus {
+  DRAFT
+  UNDER_REVIEW
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DocumentType {
+  RESPONSIBILITY_TERM
+  ART_RRT
+  DESCRIPTIVE_MEMORIAL
+  PROJECT
+  SCHEDULE
+  TEAM_LIST
+}
+
+enum DocStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  phone         String?
+  passwordHash  String
+  role          Role
+  condominiumId String? // RESIDENT e SYNDIC
+  lgpdConsentAt DateTime?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  condominium Condominium? @relation(fields: [condominiumId], references: [id])
+  units       Unit[]
+  cases       Case[]       @relation("ResidentCases")
+  documents   Document[]
+  events      CaseEvent[]
+}
+
+model Condominium {
+  id         String  @id @default(cuid())
+  name       String
+  address    String
+  city       String
+  state      String
+  signupCode String  @unique // usado no link/QR de cadastro
+  active     Boolean @default(true)
+
+  units Unit[]
+  users User[]
+  cases Case[]
+}
+
+model Unit {
+  id            String  @id @default(cuid())
+  condominiumId String
+  block         String  @default("") // "" = condomínio sem blocos
+  number        String
+  residentId    String?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id])
+  resident    User?       @relation(fields: [residentId], references: [id])
+  cases       Case[]
+
+  @@unique([condominiumId, block, number])
+}
+
+model Case {
+  id                String     @id @default(cuid())
+  protocol          String     @unique // ex: RF-2026-000123
+  condominiumId     String
+  unitId            String
+  residentId        String
+  status            CaseStatus @default(DRAFT)
+  services          String[] // ServiceKey de lib/rules/services.ts
+  affectsCommonArea Boolean    @default(false)
+  affectsFacade     Boolean    @default(false)
+  affectsStructure  Boolean    @default(false)
+  description       String
+  plannedStart      DateTime?
+  plannedEnd        DateTime?
+  contractorName    String? // quem executa a obra
+
+  // classificação final = merge(regras, Julia-1) — PLAN.md §8.4
+  riskScore     Int
+  riskLevel     RiskLevel
+  requiresArt   Boolean
+  requiredDocs  DocumentType[]
+  classifiedBy  String // "rules" | "rules+julia"
+  juliaDecision Json? // última resposta da Julia-1 (classificação), já validada
+
+  // responsável técnico (contratado pelo morador)
+  professionalName String?
+  professionalType String? // "ENGINEER" | "ARCHITECT"
+  professionalReg  String? // número CREA/CAU
+  artNumber        String? // número da ART/RRT
+
+  // decisão
+  releaseRecommendation Json? // última recomendação da Julia-1 para liberar/corrigir/recusar
+  approvalConditions    String?
+  startedAt             DateTime? // início informado pelo morador
+  completedAt           DateTime? // conclusão informada pelo morador (síndico/admin confirma)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id])
+  unit        Unit        @relation(fields: [unitId], references: [id])
+  resident    User        @relation("ResidentCases", fields: [residentId], references: [id])
+  documents   Document[]
+  events      CaseEvent[]
+
+  @@index([condominiumId, status])
+  @@index([residentId])
+}
+
+model Document {
+  id           String       @id @default(cuid())
+  caseId       String
+  type         DocumentType
+  fileName     String
+  storageKey   String
+  mimeType     String
+  sizeBytes    Int
+  status       DocStatus    @default(PENDING)
+  reviewNote   String?
+  aiNotes      Json? // observações do Claude (só informativas)
+  juliaVerdict Json? // recomendação da Julia-1: aprovar/reprovar + motivo
+  uploadedById String
+  createdAt    DateTime     @default(now())
+
+  case       Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploadedBy User @relation(fields: [uploadedById], references: [id])
+
+  @@index([caseId])
+}
+
+// Histórico + auditoria. Uma tabela só.
+model CaseEvent {
+  id         String      @id @default(cuid())
+  caseId     String
+  userId     String? // null = sistema
+  type       String // "status_changed" | "document_uploaded" | "document_reviewed" | "professional_updated"
+  //                  | "art_confirmed" | "comment" | "ai_suggestion" | "julia_decision"
+  fromStatus CaseStatus?
+  toStatus   CaseStatus?
+  message    String?
+  data       Json?
+  createdAt  DateTime    @default(now())
+
+  case Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([caseId, createdAt])
 }

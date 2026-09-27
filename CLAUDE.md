@@ -22,7 +22,7 @@ síndico/administradora confere e libera. **A plataforma não emite ART/RRT.** F
 
 ## Stack
 Bun · Next.js 16 (App Router, TS strict) · Tailwind 4 + shadcn/ui (componentes copiados em `components/ui/`) ·
-PostgreSQL + Prisma 7 (`prisma-client` + `@prisma/adapter-pg`) · Auth.js (e-mail/senha, `scrypt`) ·
+PostgreSQL + Prisma 7 (`prisma-client` + `@prisma/adapter-pg`) · Auth.js v5 (`next-auth@beta`, JWT, e-mail/senha com `scrypt`) ·
 S3 via `@aws-sdk/client-s3` (MinIO local) · Zod · `bun:test` (só `lib/`). Sem Redis, sem fila.
 
 ## Comandos
@@ -34,13 +34,15 @@ bun run lint       # eslint
 bun test           # runner do Bun, só lib/**/*.test.ts (bunfig.toml)
 bun run db:migrate | db:seed | db:generate | db:studio
 ```
-Use sempre `bun`/`bunx`, nunca npm/npx/yarn. Copie `.env.example` para `.env`.
+Use sempre `bun`/`bunx`, nunca npm/npx/yarn. Copie `.env.example` para `.env`. Os scripts `db:*` rodam o CLI do
+Prisma sob o Bun (`bunx --bun prisma`) para que o `.env` seja lido sem dotenv. Demo (seed): admin@demo.com,
+sindico@demo.com, morador@demo.com — senha `senha123`.
 
 ## Estrutura
 ```
 app/(public)/login, cadastro/[signupCode]   app/(app)/obras, obras/nova, obras/[id], obras/[id]/imprimir, art, admin
 app/api/files/[documentId]/route.ts         # único route handler: redireciona para URL assinada
-lib/db.ts auth.ts permissions.ts storage.ts events.ts decision.ts ai.ts
+lib/db.ts auth.ts (getCurrentUser) password.ts permissions.ts (can/assertCan/getCaseForUser) format.ts storage.ts events.ts decision.ts ai.ts
 lib/rules/   services.ts risk.ts checklist.ts status.ts merge.ts (+ *.test.ts)   # PURO
 lib/actions/ cases.ts documents.ts review.ts admin.ts                            # "use server", finas
 components/ui/ (shadcn)  components/ (da tela)   prisma/schema.prisma seed.ts   docs/telas/ (mockups, referência)

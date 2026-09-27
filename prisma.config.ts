@@ -1,6 +1,7 @@
 import { defineConfig } from "prisma/config";
 
-// `bun run db:*` carrega o .env sozinho (Bun lê .env ao rodar scripts), sem dotenv.
+// Os scripts db:* rodam o CLI sob o runtime do Bun (`bunx --bun prisma`), que carrega o .env
+// sozinho — por isso não precisamos de dotenv aqui.
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {

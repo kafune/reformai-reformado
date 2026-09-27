@@ -34,9 +34,8 @@ bun run lint       # eslint
 bun test           # runner do Bun, só lib/**/*.test.ts (bunfig.toml)
 bun run db:migrate | db:seed | db:generate | db:studio
 ```
-Use sempre `bun`/`bunx`, nunca npm/npx/yarn. Copie `.env.example` para `.env`. Os scripts `db:*` rodam o CLI do
-Prisma sob o Bun (`bunx --bun prisma`) para que o `.env` seja lido sem dotenv. Demo (seed): admin@demo.com,
-sindico@demo.com, morador@demo.com — senha `senha123`.
+Sempre `bun`/`bunx`, nunca npm/npx/yarn. Copie `.env.example` para `.env`. Os scripts `db:*` rodam o CLI do Prisma sob
+o Bun (`bunx --bun prisma`) para ler o `.env` sem dotenv. Demo (seed): admin@ / sindico@ / morador@demo.com, senha `senha123`.
 
 ## Estrutura
 ```

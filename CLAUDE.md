@@ -40,7 +40,8 @@ sindico@demo.com, morador@demo.com — senha `senha123`.
 
 ## Estrutura
 ```
-app/(public)/login, cadastro/[signupCode]   app/(app)/obras, obras/nova, obras/[id], obras/[id]/imprimir, art, admin
+app/(public)/login, cadastro/[signupCode]   app/(app)/obras, obras/nova, obras/[id], art, admin/condominios[/id], admin/usuarios
+app/(print)/ obras/[id]/imprimir (termo A4), admin/condominios/[id]/cartaz (QR)   # sem menu, CSS de impressão
 app/api/files/[documentId]/route.ts         # route handler: checa permissão e redireciona para URL assinada (1h)
 lib/db.ts auth.ts (getCurrentUser) password.ts permissions.ts (can/assertCan/getCaseForUser) format.ts
 lib/storage.ts (uploadFile/signedDownloadUrl) events.ts (logEvent) protocol.ts
@@ -48,9 +49,9 @@ lib/extract-text.ts (unpdf → OCR) ocr.ts (PaddleOCR serving: só fetch + Zod)
 lib/decision.ts (Julia-1: só fetch + Zod + perguntas tipadas; testes com fetch mockado) julia.ts (cola com o banco: classifyWithRules, maybeJudgeDocument, maybeRecommendRelease)
 lib/rules/   services.ts risk.ts checklist.ts status.ts merge.ts art.ts document-checks.ts (+ *.test.ts)   # PURO
 lib/actions/ auth.ts signup.ts cases.ts documents.ts review.ts admin.ts  # "use server", finas; state.ts = ActionState
+  (admin.ts: condomínios, unidades e importação, síndico com senha provisória, ativar/desativar; helpers puros em lib/admin-helpers.ts)
   (review.ts: reviewDocument, requestChanges, approveCase, rejectCase, confirmCompletion — sempre clique humano)
-components/case/ (tela da obra: form, documentos, responsável técnico, envio, timeline)
-components/ui/ (shadcn)  components/ (da tela)   prisma/schema.prisma seed.ts   docs/telas/ (mockups, referência)
+components/ui/ (shadcn) components/case/ (tela da obra) components/admin/ components/ (da tela)   prisma/ schema.prisma seed.ts   docs/
 ```
 
 ## Padrão de server action (todas seguem isso)
@@ -67,8 +68,8 @@ export async function approveCase(caseId: string, input: unknown) {
 ```
 
 ## Convenções
-- Código em inglês, textos de tela em português do Brasil. Server Components para leitura, Server Actions para mutação.
-- Tokens de cor (status, risco, Julia-1 em roxo) em `app/globals.css`; mockups e screenshots em `docs/telas/` (PLAN.md §14).
+- Código em inglês, textos em pt-BR. Server Components para leitura, Server Actions para mutação. Tokens de cor (status,
+  risco, Julia-1 em roxo) em `app/globals.css`; mockups em `docs/telas/` (PLAN.md §14).
 - Botão bloqueado sempre diz o que falta. Cada exigência mostra a origem: "pela tabela" ou "pela Julia-1: motivo".
 - Mobile first: tudo funciona em 390px; tabelas rolam dentro do card. Formulários: client component + `useActionState`;
   a action devolve `ActionState`. Upload passa pela server action (`bodySizeLimit` 25mb). Erro de storage vira mensagem.

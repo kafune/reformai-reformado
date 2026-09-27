@@ -2,6 +2,9 @@ import { describe, expect, it } from "bun:test";
 
 import type { CaseStatus } from "./rules/status";
 import {
+  AdminOnlyError,
+  assertAdmin,
+  canViewCondominium,
   ForbiddenError,
   assertCan,
   can,
@@ -108,5 +111,19 @@ describe("caseFilterForUser", () => {
   });
   it("síndico sem condomínio não lista nada", () => {
     expect(caseFilterForUser({ ...syndicA, condominiumId: null })).toEqual({ condominiumId: "__none__" });
+  });
+});
+
+describe("condomínio e admin", () => {
+  it("admin vê qualquer condomínio; síndico só o seu; morador nenhum", () => {
+    expect(canViewCondominium(admin, "condo-b")).toBe(true);
+    expect(canViewCondominium(syndicA, "condo-a")).toBe(true);
+    expect(canViewCondominium(syndicA, "condo-b")).toBe(false);
+    expect(canViewCondominium(resident, "condo-a")).toBe(false);
+  });
+  it("assertAdmin só passa para ADMIN", () => {
+    expect(() => assertAdmin(admin)).not.toThrow();
+    expect(() => assertAdmin(syndicA)).toThrow(AdminOnlyError);
+    expect(() => assertAdmin(resident)).toThrow(AdminOnlyError);
   });
 });

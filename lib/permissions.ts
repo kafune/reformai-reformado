@@ -48,6 +48,26 @@ export function canViewCase(user: UserForPermissions, c: CaseForPermissions): bo
   }
 }
 
+export function isAdmin(user: UserForPermissions): boolean {
+  return user.role === "ADMIN";
+}
+
+/** Página do condomínio (unidades, QR de cadastro): admin vê todos; síndico só o seu. */
+export function canViewCondominium(user: UserForPermissions, condominiumId: string): boolean {
+  return isAdmin(user) || (user.role === "SYNDIC" && user.condominiumId === condominiumId);
+}
+
+export class AdminOnlyError extends Error {
+  constructor() {
+    super("Só a administradora pode fazer isso.");
+    this.name = "AdminOnlyError";
+  }
+}
+
+export function assertAdmin(user: UserForPermissions): void {
+  if (!isAdmin(user)) throw new AdminOnlyError();
+}
+
 export function isReviewer(user: UserForPermissions): boolean {
   return user.role === "ADMIN" || user.role === "SYNDIC";
 }

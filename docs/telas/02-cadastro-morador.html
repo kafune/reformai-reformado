@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cadastro de morador · ReformAI</title><link rel="stylesheet" href="assets/app.css"></head>
+<body>
+<div class="auth">
+  <div class="card" style="max-width:520px">
+    <div class="card-body" style="padding:28px">
+      <div class="brand" style="padding:0;margin-bottom:18px"><div class="brand-mark">R</div>ReformAI</div>
+      <span class="badge plain b-approved">Residencial Jardim das Acácias · São Paulo/SP</span>
+      <h1 style="margin-top:12px">Criar conta de morador</h1>
+      <p class="muted" style="margin:4px 0 20px">Com a conta você registra reformas da sua unidade e acompanha a liberação.</p>
+      <form class="form-grid" onsubmit="event.preventDefault();location.href='03-morador-obras.html'">
+        <div class="field full"><label>Nome completo</label><input class="input" value="Ana Souza"></div>
+        <div class="field"><label>E-mail</label><input class="input" type="email" value="ana@email.com"></div>
+        <div class="field"><label>Telefone</label><input class="input" value="(11) 98888-7777"></div>
+        <div class="field"><label>Bloco</label>
+          <select class="select"><option>A</option><option selected>B</option><option>C</option></select></div>
+        <div class="field"><label>Unidade</label><input class="input" value="304"><span class="hint">Se a unidade já tiver outro morador cadastrado, fale com o síndico.</span></div>
+        <div class="field full"><label>Senha</label><input class="input" type="password" value="12345678"><span class="hint">Mínimo de 8 caracteres.</span></div>
+        <label class="check full" style="cursor:pointer">
+          <input type="checkbox" checked>
+          <span class="small">Li e concordo com o <a href="#">aviso de privacidade</a>. Autorizo o uso dos meus dados para análise e acompanhamento de reformas neste condomínio (LGPD).</span>
+        </label>
+        <button class="btn btn-primary full" style="height:40px">Criar conta e entrar</button>
+      </form>
+    </div>
+  </div>
+</div>
+<script src="assets/app.js"></script>
+</body></html>

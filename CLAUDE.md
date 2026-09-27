@@ -1,0 +1,67 @@
+# ReformAI (versão simples)
+
+Plataforma web de **uma** administradora de condomínios para controlar reformas nas unidades:
+o morador cadastra a obra, o sistema diz se exige ART/RRT e quais documentos, o morador anexa,
+síndico/administradora confere e libera. **A plataforma não emite ART/RRT.** Fonte de verdade: `PLAN.md`.
+
+## Decisões tomadas (PLAN.md §2)
+- Uma administradora só: sem Tenant/Organization; `ADMIN` vê todos os condomínios.
+- Sem parceiro técnico, sem vistoria: o morador traz o próprio profissional; guardamos nome, registro e nº da ART/RRT.
+- Sem comercial/pagamento. Sem dados legados (banco vazio + seed).
+- Decisões pela **Julia-1** (`lib/decision.ts`); regras de `lib/rules/` são o **piso** (ela só aumenta exigências).
+  Liberar/recusar é sempre clique humano. Claude (`lib/ai.ts`) só sugere/comenta. Sem chave de IA, tudo funciona só com regras.
+
+## Princípios (PLAN.md §4)
+1. Código chato ganha. Função simples > classe > padrão de projeto.
+2. Sem abstração antes do segundo uso. Uma implementação = nenhuma interface. Sem repositório, use case, provider, factory, eventos.
+3. Regras de negócio em funções puras em `lib/rules/` (sem Prisma, sem Next), com teste. Único lugar com teste obrigatório.
+4. Julia-1 decide dentro de trilhos: nunca reduz nível, nunca dispensa ART/documento da tabela; toda decisão vira `CaseEvent` com contexto, resposta e justificativa.
+5. Permissão sempre no servidor: toda leitura/ação de obra passa por `getCaseForUser()` / `assertCan()`.
+6. Tudo que muda uma obra gera um `CaseEvent`. Sem exceção.
+7. Arquivos nunca são públicos: download só por URL assinada de curta duração.
+
+## Stack
+Bun · Next.js 16 (App Router, TS strict) · Tailwind 4 + shadcn/ui (componentes copiados em `components/ui/`) ·
+PostgreSQL + Prisma 7 (`prisma-client` + `@prisma/adapter-pg`) · Auth.js (e-mail/senha, `scrypt`) ·
+S3 via `@aws-sdk/client-s3` (MinIO local) · Zod · `bun:test` (só `lib/`). Sem Redis, sem fila.
+
+## Comandos
+```
+bun dev            # app em http://localhost:3000
+docker compose up  # Postgres :5432 + MinIO :9000 (console :9001)
+bun run typecheck  # tsc --noEmit
+bun run lint       # eslint
+bun test           # runner do Bun, só lib/**/*.test.ts (bunfig.toml)
+bun run db:migrate | db:seed | db:generate | db:studio
+```
+Use sempre `bun`/`bunx`, nunca npm/npx/yarn. Copie `.env.example` para `.env`.
+
+## Estrutura
+```
+app/(public)/login, cadastro/[signupCode]   app/(app)/obras, obras/nova, obras/[id], obras/[id]/imprimir, art, admin
+app/api/files/[documentId]/route.ts         # único route handler: redireciona para URL assinada
+lib/db.ts auth.ts permissions.ts storage.ts events.ts decision.ts ai.ts
+lib/rules/   services.ts risk.ts checklist.ts status.ts merge.ts (+ *.test.ts)   # PURO
+lib/actions/ cases.ts documents.ts review.ts admin.ts                            # "use server", finas
+components/ui/ (shadcn)  components/ (da tela)   prisma/schema.prisma seed.ts   docs/telas/ (mockups, referência)
+```
+
+## Padrão de server action (todas seguem isso)
+```ts
+export async function approveCase(caseId: string, input: unknown) {
+  const user = await getCurrentUser();                 // 1. quem é
+  const data = ApproveSchema.parse(input);             // 2. valida (Zod)
+  const c = await getCaseForUser(user, caseId);        // 3. pode ver?
+  assertCan(user, "review", c);                        // 4. pode fazer?
+  assertCanApprove(c, docs, data.artConfirmed);        // 5. regra pura (lib/rules)
+  await db.$transaction(async (tx) => { /* update + logEvent(tx, ...) */ }); // 6. grava + CaseEvent
+  revalidatePath(`/obras/${caseId}`);                  // 7. revalida
+}
+```
+
+## Convenções
+- Código em inglês, textos de tela em português do Brasil. Server Components para leitura, Server Actions para mutação.
+- Tokens de cor (status, risco, Julia-1 em roxo) em `app/globals.css`; mockups e screenshots em `docs/telas/` (PLAN.md §14).
+- Botão bloqueado sempre diz o que falta. Cada exigência mostra a origem: "pela tabela" ou "pela Julia-1: motivo".
+- Mobile first: tudo funciona em 390px; tabelas rolam dentro do card.
+- Não implementar nada da §13 (backlog) sem pedido. Em dúvida sobre o PLAN.md, perguntar.

@@ -1,0 +1,39 @@
+# Dev local: Postgres + MinIO (S3-compatível). Sem Redis.
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: reformai
+      POSTGRES_PASSWORD: reformai
+      POSTGRES_DB: reformai
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000" # API S3
+      - "9001:9001" # console web
+    environment:
+      MINIO_ROOT_USER: reformai
+      MINIO_ROOT_PASSWORD: reformai123
+    volumes:
+      - minio-data:/data
+
+  # Cria o bucket na primeira subida.
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 reformai reformai123; do sleep 1; done;
+      mc mb --ignore-existing local/reformai;
+      "
+
+volumes:
+  postgres-data:
+  minio-data:

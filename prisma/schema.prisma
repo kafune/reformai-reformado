@@ -1,0 +1,10 @@
+// Modelo de dados: PLAN.md §9. Os modelos entram na Fase 2.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

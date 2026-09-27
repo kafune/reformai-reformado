@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Telas · ReformAI</title><link rel="stylesheet" href="assets/app.css"></head>
+<body>
+<main class="content" style="max-width:860px">
+  <div class="brand" style="padding:0"><div class="brand-mark">R</div>ReformAI — telas de referência</div>
+  <p class="muted">Mockups estáticos da versão simples (ver PLAN.md). Servem de referência visual e de fluxo — no app real, use Tailwind + shadcn/ui. Dados fictícios.</p>
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Tela</th><th>Perfil</th><th>Rota no app</th><th>Fase</th></tr></thead>
+    <tbody>
+      <tr><td>01</td><td><a class="link" href="01-login.html">Login</a></td><td>Público</td><td class="mono">/login</td><td>2</td></tr>
+      <tr><td>02</td><td><a class="link" href="02-cadastro-morador.html">Cadastro do morador (link/QR)</a></td><td>Público</td><td class="mono">/cadastro/[signupCode]</td><td>3</td></tr>
+      <tr><td>03</td><td><a class="link" href="03-morador-obras.html">Minhas obras</a></td><td>Morador</td><td class="mono">/obras</td><td>3</td></tr>
+      <tr><td>04</td><td><a class="link" href="04-morador-nova-obra.html">Nova obra (prévia de risco ao vivo)</a></td><td>Morador</td><td class="mono">/obras/nova</td><td>3</td></tr>
+      <tr><td>05</td><td><a class="link" href="05-morador-obra-detalhe.html">Detalhe da obra: ART, documentos, responsável técnico</a></td><td>Morador</td><td class="mono">/obras/[id]</td><td>3 · 6</td></tr>
+      <tr><td>06</td><td><a class="link" href="06-sindico-obras.html">Obras do condomínio</a></td><td>Síndico / Admin</td><td class="mono">/obras</td><td>4</td></tr>
+      <tr><td>07</td><td><a class="link" href="07-sindico-analise.html">Análise: conferência de documentos + decisão</a></td><td>Síndico / Admin</td><td class="mono">/obras/[id]</td><td>4 · 6</td></tr>
+      <tr><td>08</td><td><a class="link" href="08-painel-art.html">Painel ART/RRT</a></td><td>Síndico / Admin</td><td class="mono">/art</td><td>5</td></tr>
+      <tr><td>09</td><td><a class="link" href="09-admin-condominios.html">Condomínios</a></td><td>Admin</td><td class="mono">/admin/condominios</td><td>9</td></tr>
+      <tr><td>10</td><td><a class="link" href="10-admin-condominio-detalhe.html">Condomínio: unidades, importação, síndico, QR</a></td><td>Admin (síndico vê o QR)</td><td class="mono">/admin/condominios/[id]</td><td>9</td></tr>
+      <tr><td>11</td><td><a class="link" href="11-termo-liberacao.html">Termo de liberação (A4 imprimível)</a></td><td>Síndico / Admin / Morador</td><td class="mono">/obras/[id]/imprimir</td><td>8</td></tr>
+    </tbody>
+  </table></div></div>
+  <div class="card"><div class="card-body stack" style="gap:8px">
+    <h2>Convenções visuais</h2>
+    <p class="small">• <span class="badge b-draft">Rascunho</span> <span class="badge b-review">Em análise</span> <span class="badge b-changes">Correção solicitada</span> <span class="badge b-approved">Liberada</span> <span class="badge b-rejected">Recusada</span> <span class="badge b-progress">Em execução</span> <span class="badge b-done">Concluída</span> <span class="badge b-cancel">Cancelada</span></p>
+    <p class="small">• Risco: <span class="risk r-low">BAIXO</span> <span class="risk r-medium">MÉDIO</span> <span class="risk r-high">ALTO</span> <span class="risk r-critical">CRÍTICO</span></p>
+    <p class="small">• Tudo que vem da Julia-1 é <span style="color:var(--julia);font-weight:600">roxo</span> e mostra o motivo. Origem de cada exigência: <span class="origin">pela tabela</span> ou <span class="origin j">pela Julia-1</span>.</p>
+    <p class="small">• Botões bloqueados sempre dizem <em>o que falta</em> para liberar.</p>
+    <p class="small">• Aviso “a plataforma não emite ART/RRT” na obra e no termo.</p>
+  </div></div>
+</main>
+</body></html>

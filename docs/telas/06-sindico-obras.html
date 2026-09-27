@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Obras · ReformAI</title><link rel="stylesheet" href="assets/app.css"></head>
+<body data-role="SYNDIC" data-active="obras">
+<div class="shell">
+  <aside id="sidebar"></aside>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+      <div class="page-head">
+        <div><h1>Obras</h1><p class="sub">Residencial Jardim das Acácias · 48 unidades</p></div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <input class="input" placeholder="Buscar protocolo, unidade ou morador">
+          <div class="pills">
+            <span class="pill">Todas · 14</span>
+            <span class="pill on">Em análise · 3</span>
+            <span class="pill">Correção solicitada · 1</span>
+            <span class="pill">Liberadas · 2</span>
+            <span class="pill">Em execução · 4</span>
+            <span class="pill">Concluídas · 4</span>
+          </div>
+          <label class="row small" style="margin-left:auto"><input type="checkbox" checked style="accent-color:var(--primary)"> Só as que exigem ART/RRT</label>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Protocolo</th><th>Unidade</th><th>Serviços</th><th>Risco</th><th>Docs</th><th>Julia-1 recomenda</th><th>Enviada</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><a class="link" href="07-sindico-analise.html">RF-2026-000118</a></td>
+                <td>A · 102<div class="small muted">Marcos Lima</div></td>
+                <td>Hidráulica, Impermeabilização</td>
+                <td><span class="risk r-high">ALTO</span></td>
+                <td>3/3</td>
+                <td><span class="badge b-julia">Liberar c/ condições</span></td>
+                <td class="muted">há 2 dias</td>
+                <td><a class="btn btn-sm btn-primary" href="07-sindico-analise.html">Analisar</a></td>
+              </tr>
+              <tr>
+                <td><a class="link" href="#">RF-2026-000121</a></td>
+                <td>C · 1203<div class="small muted">Patrícia Nunes</div></td>
+                <td>Troca de piso com demolição</td>
+                <td><span class="risk r-medium">MÉDIO</span></td>
+                <td>2/2</td>
+                <td><span class="badge b-julia">Liberar</span></td>
+                <td class="muted">ontem</td>
+                <td><a class="btn btn-sm" href="#">Analisar</a></td>
+              </tr>
+              <tr>
+                <td><a class="link" href="#">RF-2026-000122</a></td>
+                <td>B · 701<div class="small muted">João Ribeiro</div></td>
+                <td>Gás, Mudança de layout</td>
+                <td><span class="risk r-high">ALTO</span></td>
+                <td>3/4</td>
+                <td><span class="badge b-julia">Pedir correção</span></td>
+                <td class="muted">hoje</td>
+                <td><a class="btn btn-sm" href="#">Analisar</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="hint">A recomendação da Julia-1 é só um ponto de partida: liberar, recusar ou pedir correção é sempre decisão sua.</p>
+    </main>
+  </div>
+</div>
+<script src="assets/app.js"></script>
+</body></html>

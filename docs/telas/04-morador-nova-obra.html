@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nova obra · ReformAI</title><link rel="stylesheet" href="assets/app.css"></head>
+<body data-role="RESIDENT" data-active="nova">
+<div class="shell">
+  <aside id="sidebar"></aside>
+  <div class="main">
+    <header id="topbar"></header>
+    <main class="content">
+      <div>
+        <div class="crumbs"><a href="03-morador-obras.html">Minhas obras</a> / Nova obra</div>
+        <div class="page-head"><div><h1>Nova obra</h1><p class="sub">Conte o que vai ser feito. Ao salvar, calculamos se a obra exige ART/RRT e quais documentos enviar.</p></div></div>
+      </div>
+
+      <div class="grid-2">
+        <form class="stack" onsubmit="event.preventDefault();location.href='05-morador-obra-detalhe.html'">
+          <div class="card">
+            <div class="card-head"><h2>1. Descreva a obra</h2></div>
+            <div class="card-body stack" style="gap:12px">
+              <div class="field">
+                <label for="desc">Descrição</label>
+                <textarea id="desc" class="textarea">Quero integrar a cozinha com a sala derrubando a parede entre elas e refazer toda a parte elétrica da cozinha, com novos pontos de tomada para cooktop e forno.</textarea>
+              </div>
+              <div class="row">
+                <button type="button" class="btn btn-julia btn-sm" id="suggest">✦ Sugerir serviços a partir da descrição</button>
+                <span class="hint">A sugestão só marca as opções abaixo — você confirma.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>2. Serviços</h2><span class="hint" id="nsel">0 selecionados</span></div>
+            <div class="card-body">
+              <div class="checks" id="services"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>3. A obra…</h2></div>
+            <div class="card-body checks" id="flags"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>4. Datas e executor</h2></div>
+            <div class="card-body form-grid">
+              <div class="field"><label>Início previsto</label><input class="input" type="date" value="2026-10-20"></div>
+              <div class="field"><label>Término previsto</label><input class="input" type="date" value="2026-11-30"></div>
+              <div class="field full"><label>Quem vai executar</label><input class="input" value="Construtora Bom Lar Ltda."><span class="hint">Empresa ou pessoa responsável pela execução (não precisa ser o responsável técnico).</span></div>
+            </div>
+            <div class="card-foot">
+              <a class="btn" href="03-morador-obras.html">Cancelar</a>
+              <button class="btn btn-primary">Salvar rascunho</button>
+            </div>
+          </div>
+        </form>
+
+        <aside class="stack" style="position:sticky;top:20px">
+          <div class="card">
+            <div class="card-head"><h2>Prévia</h2><span class="risk" id="risk">—</span></div>
+            <div class="card-body stack" style="gap:14px">
+              <div>
+                <div class="spread"><span class="label">Pontuação</span><span class="mono" id="score">0 / 100</span></div>
+                <div style="height:8px;border-radius:99px;background:var(--muted-bg);margin-top:6px;overflow:hidden"><div id="bar" style="height:100%;width:0;background:var(--primary)"></div></div>
+              </div>
+              <div id="art" class="callout c-ok" style="padding:10px 12px"><div class="icon">✓</div><div class="small"><strong>Não exige ART/RRT</strong></div></div>
+              <div>
+                <div class="label" style="margin-bottom:6px">Documentos que serão pedidos</div>
+                <ul id="docs" class="small" style="margin:0;padding-left:18px"></ul>
+              </div>
+              <div>
+                <div class="label" style="margin-bottom:6px">Profissional a procurar</div>
+                <ul id="guide" class="small" style="margin:0;padding-left:18px"></ul>
+              </div>
+              <p class="hint">Prévia calculada pela tabela do condomínio. Ao salvar, a <strong style="color:var(--julia)">Julia-1</strong> analisa o contexto e pode <strong>acrescentar</strong> exigências (nunca remover).</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="assets/app.js"></script>
+<script>
+// Mesma tabela de lib/rules/services.ts (PLAN.md §8.1) — aqui só para a prévia do mockup.
+const S = [
+  ["Pintura simples",5,false,null],
+  ["Troca de piso sem demolição",10,false,null],
+  ["Troca de piso com demolição",25,true,"Engenheiro civil (CREA) ou arquiteto (CAU)"],
+  ["Elétrica",30,true,"Engenheiro eletricista/civil (CREA) ou arquiteto (CAU)"],
+  ["Hidráulica",30,true,"Engenheiro civil (CREA) ou arquiteto (CAU)"],
+  ["Gás",40,true,"Engenheiro (CREA) com atribuição para instalações de gás"],
+  ["Impermeabilização",35,true,"Engenheiro civil (CREA) ou arquiteto (CAU)"],
+  ["Ar-condicionado (split)",15,false,null],
+  ["Mudança de layout",20,true,"Engenheiro civil (CREA) ou arquiteto (CAU)"],
+  ["Demolição de alvenaria",40,true,"Engenheiro civil (CREA) ou arquiteto (CAU)"],
+  ["Impacto estrutural/prumadas",60,true,"Engenheiro civil (CREA)"],
+  ["Fachada",45,true,"Engenheiro civil (CREA) ou arquiteto (CAU)"],
+  ["Esquadrias externas",20,true,"Engenheiro civil (CREA) ou arquiteto (CAU)"],
+  ["Equipamentos fixos pesados",25,true,"Engenheiro civil (CREA)"],
+];
+const F = [["Afeta área comum",10,false],["Afeta a fachada",20,true],["Afeta a estrutura (vigas, pilares, lajes)",30,true]];
+const sEl = document.getElementById("services"), fEl = document.getElementById("flags");
+S.forEach(([n,p,a],i)=>sEl.insertAdjacentHTML("beforeend",
+  `<label class="check" data-i="${i}"><input type="checkbox" data-s="${i}"><span>${n}</span><span class="tag">${a?"ART/RRT":""}</span></label>`));
+F.forEach(([n],i)=>fEl.insertAdjacentHTML("beforeend",
+  `<label class="check"><input type="checkbox" data-f="${i}"><span>${n}</span></label>`));
+
+function level(s){return s<=20?["BAIXO","r-low"]:s<=45?["MÉDIO","r-medium"]:s<=70?["ALTO","r-high"]:["CRÍTICO","r-critical"];}
+function update(){
+  let score=0, art=false; const guide=new Set();
+  document.querySelectorAll("[data-s]").forEach(c=>{c.closest(".check").classList.toggle("on",c.checked); if(c.checked){const [,p,a,g]=S[c.dataset.s];score+=p;art||=a;if(g)guide.add(g);}});
+  document.querySelectorAll("[data-f]").forEach(c=>{c.closest(".check").classList.toggle("on",c.checked); if(c.checked){const [,p,a]=F[c.dataset.f];score+=p;art||=a;}});
+  score=Math.min(score,100); const [l,cls]=level(score);
+  const n=document.querySelectorAll("[data-s]:checked").length;
+  document.getElementById("nsel").textContent=`${n} selecionado${n===1?"":"s"}`;
+  const r=document.getElementById("risk"); r.textContent=n?l:"—"; r.className="risk "+(n?cls:"");
+  document.getElementById("score").textContent=`${score} / 100`;
+  document.getElementById("bar").style.width=score+"%";
+  const docs=[]; if(score>20)docs.push("Termo de responsabilidade");
+  if(art||score>45)docs.push("ART/RRT"); if(score>45)docs.push("Memorial descritivo");
+  if(score>70)docs.push("Projeto","Cronograma","Relação da equipe");
+  document.getElementById("docs").innerHTML=docs.length?docs.map(d=>`<li>${d}</li>`).join(""):'<li class="muted">Nenhum obrigatório</li>';
+  document.getElementById("guide").innerHTML=guide.size?[...guide].map(g=>`<li>${g}</li>`).join(""):'<li class="muted">—</li>';
+  const a=document.getElementById("art");
+  a.className="callout "+(art?"c-warn":"c-ok"); a.style.padding="10px 12px";
+  a.innerHTML=art?'<div class="icon">⚠</div><div class="small"><strong>Exige ART/RRT</strong><br>Contrate um profissional habilitado antes de enviar.</div>':'<div class="icon">✓</div><div class="small"><strong>Não exige ART/RRT</strong></div>';
+}
+document.addEventListener("change",update);
+document.getElementById("suggest").onclick=()=>{
+  [3,9].forEach(i=>{const c=document.querySelector(`[data-s="${i}"]`);c.checked=true;c.closest(".check").classList.add("suggested");});
+  update();
+};
+update();
+</script>
+</body></html>

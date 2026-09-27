@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 
 export function CopyButton({ text, label = "Copiar link" }: { text: string; label?: string }) {
   const [done, setDone] = useState(false);
@@ -17,7 +18,8 @@ export function CopyButton({ text, label = "Copiar link" }: { text: string; labe
         setTimeout(() => setDone(false), 1500);
       }}
     >
-      {done ? "Copiado ✓" : label}
+      <Icon name={done ? "check" : "copy"} />
+      {done ? "Copiado" : label}
     </Button>
   );
 }

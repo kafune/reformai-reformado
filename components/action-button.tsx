@@ -17,7 +17,7 @@ export function ActionButton({
   action: () => Promise<ActionState>;
   children: React.ReactNode;
   confirm?: string;
-  variant?: "default" | "outline" | "ghost" | "destructive" | "julia";
+  variant?: "default" | "outline" | "ghost" | "destructive" | "julia" | "secondary";
   size?: "sm" | "default";
   className?: string;
 }) {
@@ -46,7 +46,7 @@ export function ActionButton({
       >
         {pending ? "…" : children}
       </Button>
-      {error && <span className="text-xs text-danger">{error}</span>}
+      {error && <span className="text-xs text-iron-600">{error}</span>}
     </span>
   );
 }

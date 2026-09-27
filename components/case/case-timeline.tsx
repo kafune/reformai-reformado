@@ -1,8 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { formatDate, formatRelative } from "@/lib/format";
 import { DOCUMENT_LABEL, isDocumentType } from "@/lib/rules/checklist";
 import { STATUS_LABEL, type CaseStatus } from "@/lib/rules/status";
-import { cn } from "@/lib/utils";
 
 export type EventRow = {
   id: string;
@@ -58,38 +57,44 @@ export function describeEvent(e: EventRow, currentUserId: string): { who: string
   }
 }
 
+const DOT: Record<"default" | "julia" | "status", string> = {
+  default: "var(--rai-ink-300)",
+  julia: "var(--julia)",
+  status: "var(--rai-green-600)",
+};
+
+/** Histórico da obra no estilo da timeline do sistema: nós com anel, hora em mono. */
 export function CaseTimeline({ events, currentUserId }: { events: EventRow[]; currentUserId: string }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Histórico</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ol className="flex flex-col">
-          {events.map((e, i) => {
-            const d = describeEvent(e, currentUserId);
-            return (
-              <li key={e.id} className="relative grid grid-cols-[18px_1fr] gap-2.5 pb-3.5">
-                {i < events.length - 1 && <span className="absolute top-[18px] bottom-0 left-2 w-px bg-border" aria-hidden />}
-                <span
-                  className={cn(
-                    "mt-1.5 ml-1 size-2.5 rounded-full bg-stone-300",
-                    d.kind === "julia" && "bg-julia",
-                    d.kind === "status" && "bg-primary",
-                  )}
-                  aria-hidden
-                />
-                <div>
-                  <div className="text-xs">
-                    <strong>{d.who}</strong> {d.text}
-                  </div>
-                  <div className="text-[11.5px] text-muted-foreground">{formatRelative(e.createdAt)}</div>
+    <div className="rounded-md bg-surface p-5 shadow-hair">
+      <Eyebrow className="mb-4">Histórico</Eyebrow>
+      {events.length === 0 && <p className="text-xs text-ink-400">Nenhum evento registrado.</p>}
+      <div className="relative pl-6">
+        <div className="absolute top-2 bottom-2 left-[6px] w-px bg-line-strong" aria-hidden />
+        {events.map((e, i) => {
+          const d = describeEvent(e, currentUserId);
+          const color = DOT[d.kind];
+          const current = i === 0;
+          return (
+            <div key={e.id} className="relative pb-4 last:pb-0">
+              <span
+                className="absolute top-1 left-[-24px] size-[13px] rounded-full"
+                style={{
+                  background: current ? color : "var(--rai-surface)",
+                  boxShadow: `0 0 0 2px var(--rai-surface), 0 0 0 ${current ? 4 : 3}px ${color}`,
+                }}
+                aria-hidden
+              />
+              <div className="flex justify-between gap-3">
+                <div className="min-w-0 text-xs leading-relaxed text-ink-700">
+                  <span className={d.kind === "julia" ? "font-semibold text-julia" : "font-semibold text-ink-900"}>{d.who}</span> {d.text}
                 </div>
-              </li>
-            );
-          })}
-        </ol>
-      </CardContent>
-    </Card>
+                <div className="font-mono text-[10px] whitespace-nowrap text-ink-400">{formatRelative(e.createdAt)}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import { FieldError } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { changePassword, deleteMyAccount, updateProfile } from "@/lib/actions/account";
@@ -17,6 +17,7 @@ export function ProfileForm({ initial }: { initial: { name: string; phone: strin
       <form action={action}>
         <CardHeader>
           <CardTitle>Meus dados</CardTitle>
+          <CardDescription>O e-mail é o seu login e não pode ser alterado por aqui.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-3.5 pt-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
@@ -30,12 +31,11 @@ export function ProfileForm({ initial }: { initial: { name: string; phone: strin
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="email">E-mail</Label>
-            <Input id="email" value={initial.email} readOnly className="bg-muted" />
-            <p className="text-xs text-muted-foreground">O e-mail é o seu login e não pode ser alterado por aqui.</p>
+            <Input id="email" value={initial.email} readOnly />
           </div>
         </CardContent>
-        <CardFooter className="justify-end gap-3 border-t pt-4">
-          {state.ok && <span className="mr-auto text-sm text-ok">Dados salvos.</span>}
+        <CardFooter className="justify-end gap-3 border-t border-divider pt-4">
+          {state.ok && <span className="mr-auto text-sm text-green-700">Dados salvos.</span>}
           <Button type="submit" variant="outline" disabled={pending}>
             {pending ? "Salvando…" : "Salvar"}
           </Button>
@@ -52,6 +52,7 @@ export function PasswordForm() {
       <form action={action}>
         <CardHeader>
           <CardTitle>Trocar senha</CardTitle>
+          <CardDescription>Mínimo de 8 caracteres.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-3.5 pt-4 sm:grid-cols-3">
           <div className="flex flex-col gap-1.5">
@@ -70,9 +71,9 @@ export function PasswordForm() {
             <FieldError messages={state.fieldErrors?.confirm} />
           </div>
         </CardContent>
-        <CardFooter className="justify-end gap-3 border-t pt-4">
-          {state.ok && <span className="mr-auto text-sm text-ok">Senha alterada.</span>}
-          {state.error && !state.ok && <span className="mr-auto text-sm text-danger">{state.error}</span>}
+        <CardFooter className="justify-end gap-3 border-t border-divider pt-4">
+          {state.ok && <span className="mr-auto text-sm text-green-700">Senha alterada.</span>}
+          {state.error && !state.ok && <span className="mr-auto text-sm text-iron-600">{state.error}</span>}
           <Button type="submit" variant="outline" disabled={pending}>
             {pending ? "Salvando…" : "Trocar senha"}
           </Button>
@@ -85,24 +86,23 @@ export function PasswordForm() {
 export function DeleteAccountForm() {
   const [state, action, pending] = useActionState<ActionState, FormData>(deleteMyAccount, {});
   return (
-    <Card className="border-danger/30">
+    <Card className="shadow-[inset_0_0_0_1px_var(--rai-iron-300)]">
       <form action={action}>
         <CardHeader>
-          <CardTitle>Excluir minha conta</CardTitle>
+          <CardTitle className="text-iron-700">Excluir minha conta</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 pt-4">
-          <p className="text-sm text-muted-foreground">
-            Seus dados pessoais (nome, e-mail e telefone) são apagados e o acesso é encerrado. As obras e o histórico do
-            condomínio ficam registrados sem a sua identificação, como a LGPD permite para obrigação legal e
-            interesse legítimo do condomínio.
+          <p className="text-sm text-ink-500">
+            Seus dados pessoais (nome, e-mail e telefone) são apagados e o acesso é encerrado. As obras e o histórico do condomínio ficam
+            registrados sem a sua identificação, como a LGPD permite para obrigação legal e interesse legítimo do condomínio.
           </p>
           <div className="flex flex-col gap-1.5 sm:max-w-xs">
             <Label htmlFor="confirm-delete">Digite EXCLUIR para confirmar</Label>
-            <Input id="confirm-delete" name="confirm" autoComplete="off" required />
+            <Input id="confirm-delete" name="confirm" autoComplete="off" required className="font-mono uppercase" />
           </div>
-          {state.error && <p className="text-sm text-danger">{state.error}</p>}
+          {state.error && <p className="text-sm text-iron-600">{state.error}</p>}
         </CardContent>
-        <CardFooter className="justify-end border-t pt-4">
+        <CardFooter className="justify-end border-t border-divider pt-4">
           <Button type="submit" variant="destructive" disabled={pending}>
             {pending ? "Excluindo…" : "Excluir minha conta"}
           </Button>

@@ -3,10 +3,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ArtSituationBadge } from "@/components/art-situation-badge";
+import { FilterPill } from "@/components/filter-pill";
 import { OriginTag } from "@/components/origin-tag";
-import { PageHeader } from "@/components/page-header";
+import { Disclaimer, PageBody, PageHeader } from "@/components/page-header";
+import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Icon } from "@/components/ui/icon";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -18,13 +23,11 @@ import { SERVICE_BY_KEY, isServiceKey } from "@/lib/rules/services";
 import { CASE_STATUSES, STATUS_LABEL, type CaseStatus } from "@/lib/rules/status";
 import { cn } from "@/lib/utils";
 
+
 export const metadata: Metadata = { title: "Painel ART/RRT" };
 
 const SITUATIONS: ArtSituation[] = ["MISSING", "SENT", "APPROVED", "REJECTED"];
 const ACTIVE_STATUSES: CaseStatus[] = ["DRAFT", "UNDER_REVIEW", "CHANGES_REQUESTED", "APPROVED", "IN_PROGRESS"];
-
-const selectClass =
-  "h-8 rounded-lg border border-input bg-background px-2.5 text-xs shadow-xs outline-none focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/30";
 
 export default async function ArtPanelPage({ searchParams }: PageProps<"/art">) {
   const user = await getCurrentUser();
@@ -83,9 +86,7 @@ export default async function ArtPanelPage({ searchParams }: PageProps<"/art">) 
   };
   const countBySituation = Object.fromEntries(SITUATIONS.map((s) => [s, rows.filter((r) => r.situation === s).length])) as Record<ArtSituation, number>;
 
-  const filtered = rows.filter(
-    (r) => (!situationFilter || r.situation === situationFilter) && (!statusFilter || r.c.status === statusFilter),
-  );
+  const filtered = rows.filter((r) => (!situationFilter || r.situation === situationFilter) && (!statusFilter || r.c.status === statusFilter));
 
   const href = (patch: Record<string, string | null>) => {
     const merged: Record<string, string | null> = { condominio: condominiumFilter, art: situationFilter, status: statusFilter, ...patch };
@@ -94,11 +95,6 @@ export default async function ArtPanelPage({ searchParams }: PageProps<"/art">) 
     const qs = p.toString();
     return qs ? `/art?${qs}` : "/art";
   };
-  const pillClass = (on: boolean) =>
-    cn(
-      "rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap",
-      on ? "border-foreground bg-foreground text-background" : "bg-background text-muted-foreground hover:text-foreground",
-    );
 
   const scopeLabel =
     user.role === "ADMIN"
@@ -114,131 +110,129 @@ export default async function ArtPanelPage({ searchParams }: PageProps<"/art">) 
           <form className="flex items-center gap-2">
             {situationFilter && <input type="hidden" name="art" value={situationFilter} />}
             {statusFilter && <input type="hidden" name="status" value={statusFilter} />}
-            <select name="condominio" defaultValue={condominiumFilter ?? ""} className={cn(selectClass, "h-9")}>
+            <NativeSelect name="condominio" defaultValue={condominiumFilter ?? ""} className="w-64">
               <option value="">Todos os condomínios ({condominiums.length})</option>
               {condominiums.map((k) => (
                 <option key={k.id} value={k.id}>
                   {k.name}
                 </option>
               ))}
-            </select>
-            <button type="submit" className="h-9 rounded-lg border bg-background px-3 text-xs font-medium hover:bg-muted">
+            </NativeSelect>
+            <Button type="submit" variant="outline">
+              <Icon name="filter" />
               Filtrar
-            </button>
+            </Button>
           </form>
         )}
       </PageHeader>
 
-      <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
-        <Kpi label="Obras que exigem ART/RRT" value={kpis.total} hint="obras ativas" />
-        <Kpi label="ART faltando" value={kpis.missing} hint="morador ainda não enviou" />
-        <Kpi label="Aguardando conferência" value={kpis.sent} hint="enviada, falta conferir" />
-        <Kpi label="⚠ Em execução sem ART aprovada" value={kpis.alarms} hint="não deveria acontecer" alarm />
-      </div>
-
-      <Card className="gap-0 py-0">
-        <div className="flex flex-wrap items-center gap-2 border-b px-3.5 py-3">
-          <div className="flex flex-wrap gap-1.5">
-            <Link href={href({ art: null })} className={pillClass(situationFilter === null)}>
-              Todas · {rows.length}
-            </Link>
-            {SITUATIONS.map((s) => (
-              <Link key={s} href={href({ art: s })} className={pillClass(situationFilter === s)}>
-                {ART_SITUATION_LABEL[s]} · {countBySituation[s]}
-              </Link>
-            ))}
-          </div>
-          <form className="ml-auto flex items-center gap-2">
-            {condominiumFilter && <input type="hidden" name="condominio" value={condominiumFilter} />}
-            {situationFilter && <input type="hidden" name="art" value={situationFilter} />}
-            <select name="status" defaultValue={statusFilter ?? ""} className={selectClass}>
-              <option value="">Qualquer status da obra</option>
-              {CASE_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_LABEL[s]}
-                </option>
-              ))}
-            </select>
-            <button type="submit" className="h-8 rounded-lg border bg-background px-2.5 text-xs font-medium hover:bg-muted">
-              Aplicar
-            </button>
-          </form>
+      <PageBody>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard label="Obras que exigem ART/RRT" value={kpis.total} hint="obras ativas" accent="green" />
+          <StatCard label="ART faltando" value={kpis.missing} hint="morador ainda não enviou" accent={kpis.missing > 0 ? "ochre" : "green"} />
+          <StatCard label="Aguardando conferência" value={kpis.sent} hint="enviada, falta conferir" accent="azulejo" />
+          <StatCard label="Em execução sem ART aprovada" value={kpis.alarms} hint={kpis.alarms > 0 ? "não deveria acontecer" : "nenhum alarme"} alarm={kpis.alarms > 0} />
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Obra</TableHead>
-              <TableHead>Condomínio · unidade</TableHead>
-              <TableHead>Serviços</TableHead>
-              <TableHead>Profissional</TableHead>
-              <TableHead>Nº ART/RRT</TableHead>
-              <TableHead>Situação da ART</TableHead>
-              <TableHead>Status da obra</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                  Nenhuma obra com esses filtros.
-                </TableCell>
+
+        <Card className="gap-0 py-0">
+          <div className="flex flex-wrap items-center gap-2.5 border-b border-divider px-4 py-3">
+            <div className="flex flex-wrap gap-1.5">
+              <FilterPill href={href({ art: null })} active={situationFilter === null}>
+                Todas · {rows.length}
+              </FilterPill>
+              {SITUATIONS.map((s) => (
+                <FilterPill key={s} href={href({ art: s })} active={situationFilter === s}>
+                  {ART_SITUATION_LABEL[s]} · {countBySituation[s]}
+                </FilterPill>
+              ))}
+            </div>
+            <form className="ml-auto flex items-center gap-2">
+              {condominiumFilter && <input type="hidden" name="condominio" value={condominiumFilter} />}
+              {situationFilter && <input type="hidden" name="art" value={situationFilter} />}
+              <NativeSelect name="status" size="sm" defaultValue={statusFilter ?? ""} className="w-52">
+                <option value="">Qualquer status da obra</option>
+                {CASE_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_LABEL[s]}
+                  </option>
+                ))}
+              </NativeSelect>
+              <Button type="submit" size="sm" variant="outline">
+                Aplicar
+              </Button>
+            </form>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Obra</TableHead>
+                <TableHead>Condomínio · unidade</TableHead>
+                <TableHead>Serviços</TableHead>
+                <TableHead>Profissional</TableHead>
+                <TableHead>Nº ART/RRT</TableHead>
+                <TableHead>Situação da ART</TableHead>
+                <TableHead>Status da obra</TableHead>
               </TableRow>
-            )}
-            {filtered.map(({ c, situation, alarm, artByJulia, serviceLabels, artNote }) => {
-              return (
-                <TableRow key={c.id} className={cn(alarm && "bg-[#fef2f2] hover:bg-[#fee2e2]")} data-alarm={alarm || undefined}>
-                  <TableCell>
-                    <Link href={`/obras/${c.id}`} className="font-semibold whitespace-nowrap hover:underline">
-                      {c.protocol}
-                    </Link>
-                    {alarm && <div className="text-xs font-semibold text-danger">sem ART aprovada</div>}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <div>{c.condominium.name}</div>
-                    <div className="text-xs text-muted-foreground">{unitShort(c.unit)}</div>
-                  </TableCell>
-                  <TableCell className="min-w-44">
-                    {serviceLabels} {artByJulia && <OriginTag origin="julia" />}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {c.professionalName ? (
-                      <>
-                        <div>{c.professionalName}</div>
-                        <div className="text-xs text-muted-foreground">{c.professionalReg}</div>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{c.artNumber ?? <span className="font-sans text-sm text-muted-foreground">—</span>}</TableCell>
-                  <TableCell>
-                    <ArtSituationBadge situation={situation} />
-                    {artNote && <div className="max-w-56 text-xs text-danger">{artNote}</div>}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={c.status} />
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-12 text-center text-ink-400">
+                    Nenhuma obra com esses filtros.
                   </TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Card>
+              )}
+              {filtered.map(({ c, situation, alarm, artByJulia, serviceLabels, artNote }) => {
+                return (
+                  <TableRow key={c.id} className={cn(alarm && "bg-iron-50 hover:bg-iron-100")} data-alarm={alarm || undefined}>
+                    <TableCell>
+                      <Link href={`/obras/${c.id}`} className="font-mono text-xs font-medium tracking-wide whitespace-nowrap text-ink-700 hover:underline">
+                        {c.protocol}
+                      </Link>
+                      {alarm && (
+                        <div className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-iron-700">
+                          <Icon name="alert" size={12} />
+                          sem ART aprovada
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <div className="font-medium text-ink-900">{c.condominium.name}</div>
+                      <div className="text-xs text-ink-500">{unitShort(c.unit)}</div>
+                    </TableCell>
+                    <TableCell className="min-w-44 max-w-64">
+                      <span className="line-clamp-2">{serviceLabels}</span> {artByJulia && <OriginTag origin="julia" />}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {c.professionalName ? (
+                        <>
+                          <div className="text-ink-900">{c.professionalName}</div>
+                          <div className="font-mono text-xs text-ink-500">{c.professionalReg}</div>
+                        </>
+                      ) : (
+                        <span className="text-ink-300">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{c.artNumber ?? <span className="font-sans text-sm text-ink-300">—</span>}</TableCell>
+                    <TableCell>
+                      <ArtSituationBadge situation={situation} />
+                      {artNote && <div className="mt-1 max-w-56 text-xs text-iron-700">{artNote}</div>}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={c.status} />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
 
-      <p className="border-l-[3px] pl-2.5 text-xs text-muted-foreground">
-        A plataforma não emite ART/RRT. A situação acima reflete o documento enviado pelo morador e a conferência do
-        síndico ou da administradora.
-      </p>
+        <Disclaimer>
+          <strong className="text-ink-600">A plataforma não emite ART/RRT.</strong> A situação acima reflete o documento enviado pelo morador e a
+          conferência do síndico ou da administradora.
+        </Disclaimer>
+      </PageBody>
     </>
-  );
-}
-
-function Kpi({ label, value, hint, alarm = false }: { label: string; value: number; hint: string; alarm?: boolean }) {
-  return (
-    <Card className={cn("gap-0 px-4 py-4", alarm && "border-[#fecaca] bg-[#fef2f2]")}>
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className={cn("mt-1 text-[26px] font-bold tracking-tight", alarm && "text-danger")}>{value}</div>
-      <div className="text-xs text-muted-foreground">{hint}</div>
-    </Card>
   );
 }

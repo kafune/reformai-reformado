@@ -7,15 +7,19 @@ import { CondominiumFormDialog } from "@/components/admin/condominium-form";
 import { CopyButton } from "@/components/admin/copy-button";
 import { SyndicFormDialog } from "@/components/admin/syndic-form";
 import { ImportUnitsForm, UnitForm } from "@/components/admin/unit-forms";
+import { PageBody, PageHeader } from "@/components/page-header";
+import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { deleteUnit, regenerateSignupCode, setCondominiumActive, setUserActive, updateCondominium } from "@/lib/actions/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { initials, unitShort } from "@/lib/format";
+import { unitShort } from "@/lib/format";
 import { canViewCondominium, isAdmin } from "@/lib/permissions";
 import { signupLink } from "@/lib/signup-link";
 
@@ -36,7 +40,10 @@ export default async function CondominiumPage({ params, searchParams }: PageProp
   const c = await db.condominium.findUnique({
     where: { id },
     include: {
-      units: { include: { resident: { select: { id: true, name: true, active: true } }, _count: { select: { cases: true } } }, orderBy: [{ block: "asc" }, { number: "asc" }] },
+      units: {
+        include: { resident: { select: { id: true, name: true, active: true } }, _count: { select: { cases: true } } },
+        orderBy: [{ block: "asc" }, { number: "asc" }],
+      },
       users: { where: { role: { in: ["SYNDIC", "RESIDENT"] } }, orderBy: [{ role: "asc" }, { name: "asc" }] },
     },
   });
@@ -51,219 +58,234 @@ export default async function CondominiumPage({ params, searchParams }: PageProp
 
   return (
     <>
-      <div>
-        <p className="mb-1.5 text-xs text-muted-foreground">
-          {admin ? (
-            <>
-              <Link href="/admin/condominios" className="hover:underline">
-                Condomínios
-              </Link>{" "}
-              / {c.name}
-            </>
-          ) : (
-            "Cadastro de moradores"
-          )}
-        </p>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="text-[22px] font-semibold tracking-tight">{c.name}</h1>
-              {!c.active && <Badge variant="secondary">Inativo</Badge>}
-            </div>
-            <p className="mt-1 text-muted-foreground">
-              {c.address} — {c.city}/{c.state}
-            </p>
-          </div>
-          {admin && (
-            <div className="flex flex-wrap gap-2.5">
-              <CondominiumFormDialog
-                action={updateCondominium.bind(null, c.id)}
-                initial={{ name: c.name, address: c.address, city: c.city, state: c.state, signupCode: c.signupCode }}
-                title="Editar condomínio"
-                trigger={<Button variant="outline">Editar dados</Button>}
-              />
-              <ActionButton
-                action={setCondominiumActive.bind(null, c.id, !c.active)}
-                variant={c.active ? "destructive" : "default"}
-                size="default"
-                confirm={c.active ? "Desativar o condomínio? O link de cadastro para de funcionar." : undefined}
-              >
-                {c.active ? "Desativar" : "Ativar"}
-              </ActionButton>
-            </div>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        breadcrumb={admin ? [{ label: "Condomínios", href: "/admin/condominios" }, c.name] : ["Cadastro de moradores"]}
+        title={c.name}
+        badges={
+          !c.active ? (
+            <Badge variant="neutral" dot>
+              Inativo
+            </Badge>
+          ) : undefined
+        }
+        subtitle={`${c.address} — ${c.city}/${c.state} · ${c.units.length} unidade${c.units.length === 1 ? "" : "s"} · ${residents.length} morador${residents.length === 1 ? "" : "es"}`}
+      >
+        {admin && (
+          <>
+            <CondominiumFormDialog
+              action={updateCondominium.bind(null, c.id)}
+              initial={{ name: c.name, address: c.address, city: c.city, state: c.state, signupCode: c.signupCode }}
+              title="Editar condomínio"
+              trigger={
+                <Button variant="outline" size="sm">
+                  <Icon name="edit" />
+                  Editar dados
+                </Button>
+              }
+            />
+            <ActionButton
+              action={setCondominiumActive.bind(null, c.id, !c.active)}
+              variant={c.active ? "destructive" : "default"}
+              confirm={c.active ? "Desativar o condomínio? O link de cadastro para de funcionar." : undefined}
+            >
+              {c.active ? "Desativar" : "Ativar"}
+            </ActionButton>
+          </>
+        )}
+      </PageHeader>
 
-      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="flex flex-col gap-5">
-          <Card className="gap-0 py-0">
-            <CardHeader className="flex-row items-center justify-between py-4">
-              <CardTitle>Unidades</CardTitle>
-              <span className="text-xs text-muted-foreground">
-                {c.units.length} unidade{c.units.length === 1 ? "" : "s"} · {withResident} com morador
-              </span>
-            </CardHeader>
-            <div className="flex flex-wrap items-center gap-2 border-y px-3.5 py-3">
-              <form>
-                <Input name="q" defaultValue={q} placeholder="Bloco ou número" className="h-8 w-40 text-xs" />
-              </form>
-              {admin && (
-                <div className="ml-auto">
-                  <UnitForm condominiumId={c.id} />
+      <PageBody>
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="flex flex-col gap-5">
+            <Card className="gap-0 py-0">
+              <CardHeader className="flex-row items-center justify-between py-4">
+                <div>
+                  <CardTitle>Unidades</CardTitle>
+                  <CardDescription className="mt-1 font-mono text-[10px] tracking-caps uppercase">
+                    {c.units.length} unidade{c.units.length === 1 ? "" : "s"} · {withResident} com morador
+                  </CardDescription>
                 </div>
-              )}
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Bloco</TableHead>
-                  <TableHead>Unidade</TableHead>
-                  <TableHead>Morador</TableHead>
-                  <TableHead>Obras</TableHead>
-                  {admin && <TableHead />}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {units.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
-                      Nenhuma unidade{q ? " com esse filtro" : ". Adicione ou importe abaixo"}.
-                    </TableCell>
-                  </TableRow>
+              </CardHeader>
+              <div className="flex flex-wrap items-center gap-2 border-y border-divider px-4 py-3">
+                <form>
+                  <Input name="q" defaultValue={q} icon="search" placeholder="Bloco ou número" className="h-9 w-48 text-xs max-md:min-h-9" />
+                </form>
+                {admin && (
+                  <div className="ml-auto">
+                    <UnitForm condominiumId={c.id} />
+                  </div>
                 )}
-                {units.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell>{u.block || <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell className="font-medium">{u.number}</TableCell>
-                    <TableCell>
-                      {u.resident ? (
-                        <>
-                          {u.resident.name}
-                          {!u.resident.active && <Badge variant="secondary" className="ml-2">inativo</Badge>}
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{u._count.cases}</TableCell>
-                    {admin && (
-                      <TableCell className="text-right">
-                        {!u.residentId && u._count.cases === 0 && (
-                          <ActionButton action={deleteUnit.bind(null, u.id)} variant="ghost" confirm={`Remover a unidade ${unitShort(u)}?`}>
-                            Remover
-                          </ActionButton>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>Bloco</TableHead>
+                    <TableHead>Unidade</TableHead>
+                    <TableHead>Morador</TableHead>
+                    <TableHead className="text-right">Obras</TableHead>
+                    {admin && <TableHead />}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {units.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-10 text-center text-ink-400">
+                        Nenhuma unidade{q ? " com esse filtro" : ". Adicione ou importe abaixo"}.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {units.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-mono text-xs">{u.block || <span className="text-ink-300">—</span>}</TableCell>
+                      <TableCell className="font-medium text-ink-900">{u.number}</TableCell>
+                      <TableCell>
+                        {u.resident ? (
+                          <span className="inline-flex items-center gap-2">
+                            {u.resident.name}
+                            {!u.resident.active && <Badge variant="neutral">inativo</Badge>}
+                          </span>
+                        ) : (
+                          <span className="text-ink-300">—</span>
                         )}
                       </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-
-          {admin && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Importar unidades</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ImportUnitsForm condominiumId={c.id} />
-              </CardContent>
+                      <TableCell className="text-right font-mono text-xs">{u._count.cases}</TableCell>
+                      {admin && (
+                        <TableCell className="text-right">
+                          {!u.residentId && u._count.cases === 0 && (
+                            <ActionButton action={deleteUnit.bind(null, u.id)} variant="ghost" confirm={`Remover a unidade ${unitShort(u)}?`}>
+                              Remover
+                            </ActionButton>
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </Card>
-          )}
 
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Síndico</CardTitle>
-              {admin && <SyndicFormDialog condominiumId={c.id} trigger={<Button size="sm" variant="outline">＋ Novo síndico</Button>} />}
-            </CardHeader>
-            <CardContent className="flex flex-col divide-y">
-              {syndics.length === 0 && <p className="text-sm text-muted-foreground">Sem síndico cadastrado.</p>}
-              {syndics.map((s) => (
-                <div key={s.id} className="flex flex-wrap items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-                  <span className="grid size-8 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">{initials(s.name)}</span>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold">
-                      {s.name} {!s.active && <Badge variant="secondary">inativo</Badge>}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {s.email}
-                      {s.phone && ` · ${s.phone}`}
-                    </div>
-                  </div>
-                  {admin && s.id !== user.id && (
-                    <ActionButton action={setUserActive.bind(null, s.id, !s.active)} variant={s.active ? "destructive" : "outline"}>
-                      {s.active ? "Desativar" : "Ativar"}
-                    </ActionButton>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+            {admin && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Importar unidades</CardTitle>
+                  <CardDescription>Uma unidade por linha. Unidades que já existem são ignoradas.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ImportUnitsForm condominiumId={c.id} />
+                </CardContent>
+              </Card>
+            )}
 
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>Moradores</CardTitle>
-              <span className="text-xs text-muted-foreground">{residents.length} cadastrado{residents.length === 1 ? "" : "s"}</span>
-            </CardHeader>
-            <CardContent className="flex flex-col divide-y">
-              {residents.length === 0 && <p className="text-sm text-muted-foreground">Ninguém se cadastrou ainda. Divulgue o link ou o QR ao lado.</p>}
-              {residents.map((r) => {
-                const unit = unitOf(r.id);
-                return (
-                  <div key={r.id} className="flex flex-wrap items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+            <Card>
+              <CardHeader className="flex-row items-center justify-between">
+                <CardTitle>Síndico</CardTitle>
+                {admin && (
+                  <SyndicFormDialog
+                    condominiumId={c.id}
+                    trigger={
+                      <Button size="sm" variant="outline">
+                        <Icon name="plus" />
+                        Novo síndico
+                      </Button>
+                    }
+                  />
+                )}
+              </CardHeader>
+              <CardContent className="flex flex-col divide-y divide-divider">
+                {syndics.length === 0 && <p className="text-sm text-ink-500">Sem síndico cadastrado.</p>}
+                {syndics.map((s) => (
+                  <div key={s.id} className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+                    <Avatar name={s.name} size={36} color="var(--rai-azulejo-600)" />
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold">
-                        {r.name} {!r.active && <Badge variant="secondary">inativo</Badge>}
+                      <div className="flex items-center gap-2 font-medium text-ink-900">
+                        {s.name} {!s.active && <Badge variant="neutral">inativo</Badge>}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {unit ? unitShort(unit) : "sem unidade"} · {r.email}
-                        {r.phone && ` · ${r.phone}`}
+                      <div className="text-xs text-ink-500">
+                        {s.email}
+                        {s.phone && ` · ${s.phone}`}
                       </div>
                     </div>
-                    {admin && (
-                      <ActionButton action={setUserActive.bind(null, r.id, !r.active)} variant={r.active ? "destructive" : "outline"}>
-                        {r.active ? "Desativar" : "Ativar"}
+                    {admin && s.id !== user.id && (
+                      <ActionButton action={setUserActive.bind(null, s.id, !s.active)} variant={s.active ? "destructive" : "outline"}>
+                        {s.active ? "Desativar" : "Ativar"}
                       </ActionButton>
                     )}
                   </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        </div>
+                ))}
+              </CardContent>
+            </Card>
 
-        <aside className="flex flex-col gap-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cadastro de moradores</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-3 text-center">
-              <div className="rounded-lg border bg-white p-2 [&>svg]:size-[180px]" dangerouslySetInnerHTML={{ __html: qrSvg }} />
-              <p className="text-xs text-muted-foreground">O morador aponta a câmera ou abre o link e cria a conta já vinculada a este condomínio.</p>
-              <Input readOnly value={url} className="h-8 font-mono text-xs" />
-              <div className="flex flex-wrap justify-center gap-2">
-                <CopyButton text={url} />
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`/admin/condominios/${c.id}/cartaz`} target="_blank">
-                    Imprimir cartaz
-                  </Link>
-                </Button>
+            <Card>
+              <CardHeader className="flex-row items-center justify-between">
+                <CardTitle>Moradores</CardTitle>
+                <span className="font-mono text-[10px] tracking-caps text-ink-400 uppercase">
+                  {residents.length} cadastrado{residents.length === 1 ? "" : "s"}
+                </span>
+              </CardHeader>
+              <CardContent className="flex flex-col divide-y divide-divider">
+                {residents.length === 0 && <p className="text-sm text-ink-500">Ninguém se cadastrou ainda. Divulgue o link ou o QR ao lado.</p>}
+                {residents.map((r) => {
+                  const unit = unitOf(r.id);
+                  return (
+                    <div key={r.id} className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+                      <Avatar name={r.name} size={36} color="var(--rai-clay-500)" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 font-medium text-ink-900">
+                          {r.name} {!r.active && <Badge variant="neutral">inativo</Badge>}
+                        </div>
+                        <div className="text-xs text-ink-500">
+                          <span className="font-mono">{unit ? unitShort(unit) : "sem unidade"}</span> · {r.email}
+                          {r.phone && ` · ${r.phone}`}
+                        </div>
+                      </div>
+                      {admin && (
+                        <ActionButton action={setUserActive.bind(null, r.id, !r.active)} variant={r.active ? "destructive" : "outline"}>
+                          {r.active ? "Desativar" : "Ativar"}
+                        </ActionButton>
+                      )}
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </div>
+
+          <aside className="flex flex-col gap-4">
+            <div className="rounded-md bg-surface p-5 shadow-hair">
+              <Eyebrow>Cadastro de moradores</Eyebrow>
+              <p className="mt-1 text-sm font-semibold text-ink-900">Link e QR do condomínio</p>
+              <div className="mt-4 flex flex-col items-center gap-3 text-center">
+                <div className="rounded-md bg-white p-2 shadow-hair [&>svg]:size-[180px]" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+                <p className="text-xs text-ink-500">O morador aponta a câmera ou abre o link e cria a conta já vinculada a este condomínio.</p>
+                <Input readOnly value={url} className="h-9 font-mono text-xs max-md:min-h-9" />
+                <div className="flex flex-wrap justify-center gap-2">
+                  <CopyButton text={url} />
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`/admin/condominios/${c.id}/cartaz`} target="_blank">
+                      <Icon name="print" />
+                      Imprimir cartaz
+                    </Link>
+                  </Button>
+                </div>
+                {admin && (
+                  <div className="mt-2 flex flex-col items-center gap-1 border-t border-divider pt-3">
+                    <ActionButton
+                      action={regenerateSignupCode.bind(null, c.id)}
+                      variant="ghost"
+                      className="text-iron-700"
+                      confirm="Gerar novo código? O link e o QR antigos deixam de funcionar."
+                    >
+                      Gerar novo código
+                    </ActionButton>
+                    <p className="text-[11px] text-ink-400">Gerar novo código invalida o link antigo.</p>
+                  </div>
+                )}
+                {!c.active && <p className="text-xs text-iron-700">Condomínio inativo: o link de cadastro não funciona.</p>}
               </div>
-              {admin && (
-                <>
-                  <ActionButton action={regenerateSignupCode.bind(null, c.id)} variant="ghost" className="text-danger" confirm="Gerar novo código? O link e o QR antigos deixam de funcionar.">
-                    Gerar novo código
-                  </ActionButton>
-                  <p className="text-xs text-muted-foreground">Gerar novo código invalida o link antigo.</p>
-                </>
-              )}
-              {!c.active && <p className="text-xs text-danger">Condomínio inativo: o link de cadastro não funciona.</p>}
-            </CardContent>
-          </Card>
-        </aside>
-      </div>
+            </div>
+          </aside>
+        </div>
+      </PageBody>
     </>
   );
 }

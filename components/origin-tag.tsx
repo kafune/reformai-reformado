@@ -6,8 +6,8 @@ export function OriginTag({ origin, reason }: { origin: "rules" | "julia"; reaso
     <span
       title={reason}
       className={cn(
-        "inline-block rounded px-1.5 text-[11px] font-semibold whitespace-nowrap",
-        origin === "julia" ? "bg-julia-soft text-julia" : "bg-muted text-muted-foreground",
+        "inline-block rounded-xs px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-wide whitespace-nowrap uppercase",
+        origin === "julia" ? "bg-julia-soft text-julia" : "bg-bone-200 text-ink-500",
       )}
     >
       {origin === "julia" ? "pela Julia-1" : "pela tabela"}

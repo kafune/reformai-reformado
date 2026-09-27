@@ -42,9 +42,11 @@ sindico@demo.com, morador@demo.com — senha `senha123`.
 ```
 app/(public)/login, cadastro/[signupCode]   app/(app)/obras, obras/nova, obras/[id], obras/[id]/imprimir, art, admin
 app/api/files/[documentId]/route.ts         # único route handler: redireciona para URL assinada
-lib/db.ts auth.ts (getCurrentUser) password.ts permissions.ts (can/assertCan/getCaseForUser) format.ts storage.ts events.ts decision.ts ai.ts
+lib/db.ts auth.ts (getCurrentUser) password.ts permissions.ts (can/assertCan/getCaseForUser) format.ts
+lib/storage.ts (uploadFile/signedDownloadUrl) events.ts (logEvent) protocol.ts decision.ts ai.ts
 lib/rules/   services.ts risk.ts checklist.ts status.ts merge.ts (+ *.test.ts)   # PURO
-lib/actions/ cases.ts documents.ts review.ts admin.ts                            # "use server", finas
+lib/actions/ auth.ts signup.ts cases.ts documents.ts review.ts admin.ts  # "use server", finas; state.ts = ActionState
+components/case/ (tela da obra: form, documentos, responsável técnico, envio, timeline)
 components/ui/ (shadcn)  components/ (da tela)   prisma/schema.prisma seed.ts   docs/telas/ (mockups, referência)
 ```
 
@@ -66,4 +68,6 @@ export async function approveCase(caseId: string, input: unknown) {
 - Tokens de cor (status, risco, Julia-1 em roxo) em `app/globals.css`; mockups e screenshots em `docs/telas/` (PLAN.md §14).
 - Botão bloqueado sempre diz o que falta. Cada exigência mostra a origem: "pela tabela" ou "pela Julia-1: motivo".
 - Mobile first: tudo funciona em 390px; tabelas rolam dentro do card.
+- Formulários: client component + `useActionState`; a action devolve `ActionState` (`error`, `fieldErrors`, `ok`).
+  Upload passa pela server action (`bodySizeLimit` 25mb no next.config.ts). Erro de storage vira mensagem, não exceção.
 - Não implementar nada da §13 (backlog) sem pedido. Em dúvida sobre o PLAN.md, perguntar.

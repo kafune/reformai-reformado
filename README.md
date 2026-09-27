@@ -28,5 +28,6 @@ Checagens: `bun test` · `bun run lint` · `bun run typecheck` · `bun run test:
 
 ## Produção
 
-Um container (`Dockerfile`) + Postgres + bucket S3. Passo a passo em [`docs/deploy.md`](docs/deploy.md).
+Um container (`Dockerfile`) + Postgres + bucket S3. Passo a passo genérico em [`docs/deploy.md`](docs/deploy.md);
+numa VPS com Docker e TLS automático, siga [`docs/deploy-vps.md`](docs/deploy-vps.md) (`docker-compose.prod.yml`).
 Referências: [`docs/julia-1-api.md`](docs/julia-1-api.md), [`docs/ocr.md`](docs/ocr.md).

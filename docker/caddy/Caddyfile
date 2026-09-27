@@ -1,0 +1,8 @@
+# TLS automático (Let's Encrypt) para o domínio em $DOMAIN. Upload de documento vai até 20 MB.
+{$DOMAIN} {
+	encode zstd gzip
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy app:3000
+}

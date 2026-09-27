@@ -4,6 +4,7 @@ node_modules
 .env*
 !.env.example
 docs
+docker-compose*.yml
 e2e
 test-results
 playwright-report

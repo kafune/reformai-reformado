@@ -1,5 +1,7 @@
 # Deploy
 
+> Para uma VPS com Docker, Caddy e TLS automático, siga o guia pronto: [`deploy-vps.md`](deploy-vps.md).
+
 O app é um único container Next.js (Node) + PostgreSQL + um bucket S3-compatível. Julia-1, OCR e
 e-mail são opcionais: sem as variáveis, o app funciona só com as regras.
 

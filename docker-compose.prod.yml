@@ -1,0 +1,98 @@
+# Produção numa VPS: app + Postgres + MinIO + Caddy (TLS automático). Ver docs/deploy-vps.md.
+# Sobe com: docker compose -f docker-compose.prod.yml up -d --build
+# Julia-1 e OCR são opcionais: acrescente --profile julia e/ou --profile ocr.
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://reformai:${POSTGRES_PASSWORD}@postgres:5432/reformai
+      S3_ENDPOINT: http://minio:9000
+      S3_FORCE_PATH_STYLE: "true"
+      JULIA_URL: ${JULIA_URL:-}
+      OCR_URL: ${OCR_URL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    expose:
+      - "3000"
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: reformai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: reformai
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reformai -d reformai"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY}
+    volumes:
+      - minio-data:/data
+    # Sem portas publicadas: só o app (rede interna) fala com o bucket. Console: ver docs/deploy-vps.md.
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 ${S3_ACCESS_KEY_ID} ${S3_SECRET_ACCESS_KEY}; do sleep 2; done;
+      mc mb --ignore-existing local/${S3_BUCKET:-reformai};
+      "
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+  julia:
+    profiles: ["julia"]
+    build: https://github.com/ViniciuszXL/julia-1-api.git
+    restart: unless-stopped
+    environment:
+      MODEL_PROVIDER: julia
+      MODEL_CPU_THREADS: 4
+      MODEL_RATE_LIMIT_RPM: 0
+    volumes:
+      - julia-models:/models
+
+  ocr:
+    profiles: ["ocr"]
+    build: ./docker/ocr
+    restart: unless-stopped
+    volumes:
+      - ocr-models:/root/.paddlex
+
+volumes:
+  postgres-data:
+  minio-data:
+  caddy-data:
+  caddy-config:
+  julia-models:
+  ocr-models:
